@@ -104,9 +104,14 @@ def show_admin_page():
             
         # Tab 2: Skills Analysis
         with tab2:
-            # Calculate skill columns and expertise distribution first
+            # Calculate skill columns and expertise distribution
             skill_cols = [col for col in responses_df.columns if col not in ['Response ID', 'Timestamp', 'Submitter Email']]
             
+            # Summary statistics table
+            st.subheader("Summary Statistics")
+            col1, col2 = st.columns(2)
+            
+            # Calculate expertise distribution
             def get_expertise_counts(row):
                 primary = sum(1 for x in row if x >= 8)
                 secondary = sum(1 for x in row if 3 <= x < 8)
@@ -114,10 +119,6 @@ def show_admin_page():
                 return pd.Series({'Primary': primary, 'Secondary': secondary, 'Limited': limited})
             
             expertise_dist = responses_df[skill_cols].apply(get_expertise_counts, axis=1)
-            
-            # Summary statistics table
-            st.subheader("Summary Statistics")
-            col1, col2 = st.columns(2)
             
             with col1:
                 st.markdown("**Average Skills per Person:**")
