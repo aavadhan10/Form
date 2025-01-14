@@ -91,6 +91,46 @@ def main():
     # Main form page
     st.title("Caravel Law Skills Matrix")
     
+    # Introduction
+    st.markdown("""
+    Welcome to the Skills Matrix Survey! The purpose of this matrix is to help us gather insights into your strengths and areas 
+    of expertise, ensuring we effectively leverage our team's collective knowledge. This information will play a critical role in:
+    
+    - Developing business development and marketing strategies
+    - Identifying growth opportunities for the Firm
+    - Uncovering untapped talents
+    - Guiding our strategic initiatives
+    
+    Please note, some skills listed may be industry specific or with a specialization. If not applicable, you can leave blank or put 0.
+    
+    ### Points Allocation Overview
+    You have **90 points** to allocate across **172 skills** listed in the matrix. These points represent your level of expertise 
+    and experience in each area. The goal is to allocate your points in a way that best reflects your true areas of strength. 
+    You'll need to make thoughtful choices about where your expertise lies, prioritizing key skills over areas of limited 
+    experience to ensure we capture an honest reflection of your abilities.
+    
+    ### How to Complete the Matrix
+    
+    **1. Review the Skills**
+    Carefully read through the skills listed in the matrix. Each skill represents a specific area of expertise relevant to our team's work.
+    
+    **2. Allocate Your Points**
+    Distribute your 90 points across the skills based on your expertise. Remember, the objective is to highlight your primary 
+    strengths while providing an honest reflection of your experience in other areas.
+    
+    **3. Consider Balance**
+    While you are free to allocate up to 10 points for a single skill, keep in mind that spreading your points too thinly may 
+    not fully represent your primary areas of expertise. Prioritize the skills where you are most confident and experienced.
+    
+    **4. Total Points**
+    Ensure that the total number of points you allocate across all skills does not exceed **90 points**.
+    
+    ### Example Point Distribution
+    - **Distribution and Supply Agreements:** 🔵 8 points (Primary area of expertise—highly experienced)
+    - **Employment Agreements:** 🟢 4 points (Moderate experience)
+    - **Technology Transfer Agreements:** 🟡 2 points (Limited experience)
+    """)
+    
     # Initialize session state
     if 'total_points' not in st.session_state:
         st.session_state.total_points = 0
