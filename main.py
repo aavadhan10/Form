@@ -65,6 +65,8 @@ def check_password():
 
 def show_admin_page():
     """Shows the admin page with download functionality and advanced analytics"""
+    import plotly.express as px
+    import plotly.graph_objects as go
     st.header("Admin Dashboard")
     
     # Load responses from file
@@ -93,19 +95,34 @@ def show_admin_page():
                     st.experimental_rerun()
         
         # Tabs for different analysis views
-        tab1, tab2, tab3, tab4 = st.tabs(["Skills Analysis", "Expertise Distribution", "Time Trends", "Raw Data"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Raw Data", "Skills Analysis", "Expertise Distribution", "Time Trends"])
         
-        # Tab 1: Skills Analysis
+        # Tab 1: Raw Data
         with tab1:
+            st.subheader("Raw Response Data")
+            st.dataframe(responses_df)
+            
+        # Tab 2: Skills Analysis
+        with tab2:
             st.subheader("Average Points by Skill")
             # Calculate average points for each skill (excluding metadata columns)
             skill_cols = [col for col in responses_df.columns if col not in ['Response ID', 'Timestamp', 'Submitter Email']]
             avg_points = responses_df[skill_cols].mean().sort_values(ascending=False)
             
-            # Create a bar chart for average points
-            st.bar_chart(avg_points)
+            # Create a bar chart for average points with color coding
+            fig = px.bar(
+                x=avg_points.index,
+                y=avg_points.values,
+                color=avg_points.values,
+                color_continuous_scale=[[0, '#FFE5B4'],  # Light yellow for limited
+                                      [0.3, '#90EE90'],  # Green for secondary
+                                      [0.8, '#4169E1']], # Blue for primary
+                title='Average Points by Skill'
+            )
+            fig.update_layout(showlegend=False, xaxis_tickangle=-45)
+            st.plotly_chart(fig, use_container_width=True)
             
-            # Show top skills
+            # Show top skills with color coding
             st.subheader("Most Common Primary Expertise Areas")
             primary_expertise = pd.DataFrame()
             for skill in skill_cols:
@@ -114,7 +131,15 @@ def show_admin_page():
                     primary_expertise.at[skill, 'Count'] = primary_count
             
             primary_expertise = primary_expertise.sort_values('Count', ascending=False)
-            st.bar_chart(primary_expertise['Count'])
+            fig2 = px.bar(
+                x=primary_expertise.index,
+                y=primary_expertise['Count'],
+                color=primary_expertise['Count'],
+                color_continuous_scale=[[0, '#4169E1'], [1, '#4169E1']],  # Blue for primary expertise
+                title='Number of Primary Expertise Areas'
+            )
+            fig2.update_layout(showlegend=False, xaxis_tickangle=-45)
+            st.plotly_chart(fig2, use_container_width=True)
         
         # Tab 2: Expertise Distribution
         with tab2:
@@ -137,10 +162,18 @@ def show_admin_page():
             with col3:
                 st.metric("Avg Limited Skills", f"{expertise_dist['Limited'].mean():.1f}")
             
-            # Distribution chart
+            # Distribution chart with colors
             st.subheader("Distribution of Expertise Levels Across Team")
             expertise_totals = expertise_dist.sum()
-            st.bar_chart(expertise_totals)
+            fig3 = go.Figure(data=[
+                go.Bar(
+                    x=['Primary', 'Secondary', 'Limited'],
+                    y=expertise_totals,
+                    marker_color=['#4169E1', '#90EE90', '#FFE5B4']  # Blue, Green, Yellow
+                )
+            ])
+            fig3.update_layout(title='Distribution of Expertise Levels')
+            st.plotly_chart(fig3, use_container_width=True)
         
         # Tab 3: Time Trends
         with tab3:
@@ -153,17 +186,33 @@ def show_admin_page():
             daily_submissions = responses_df.groupby(responses_df['Timestamp'].dt.date).size().reset_index()
             daily_submissions.columns = ['Date', 'Submissions']
             
-            st.line_chart(daily_submissions.set_index('Date'))
+            # Daily submissions with color
+            fig4 = go.Figure()
+            fig4.add_trace(go.Scatter(
+                x=daily_submissions['Date'],
+                y=daily_submissions['Submissions'],
+                mode='lines+markers',
+                name='Daily Submissions',
+                line=dict(color='#4169E1')  # Blue
+            ))
+            fig4.update_layout(title='Daily Submissions')
+            st.plotly_chart(fig4, use_container_width=True)
             
-            # Cumulative submissions
+            # Cumulative submissions with color
             st.subheader("Cumulative Submissions")
             daily_submissions['Cumulative'] = daily_submissions['Submissions'].cumsum()
-            st.line_chart(daily_submissions.set_index('Date')['Cumulative'])
+            fig5 = go.Figure()
+            fig5.add_trace(go.Scatter(
+                x=daily_submissions['Date'],
+                y=daily_submissions['Cumulative'],
+                mode='lines+markers',
+                name='Cumulative Submissions',
+                line=dict(color='#90EE90')  # Green
+            ))
+            fig5.update_layout(title='Cumulative Submissions Over Time')
+            st.plotly_chart(fig5, use_container_width=True)
         
-        # Tab 4: Raw Data
-        with tab4:
-            st.subheader("Raw Response Data")
-            st.dataframe(responses_df)
+
             
     else:
         st.info("No responses collected yet.")
