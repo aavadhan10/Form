@@ -64,46 +64,106 @@ def check_password():
     return False
 
 def show_admin_page():
-    """Shows the admin page with download functionality"""
+    """Shows the admin page with download functionality and advanced analytics"""
     st.header("Admin Dashboard")
     
     # Load responses from file
     responses_df = load_responses()
     
     if not responses_df.empty:
-        st.success(f"Total responses collected: {len(responses_df)}")
-        
-        # Add refresh button
-        if st.button("🔄 Refresh Data"):
-            st.experimental_rerun()
-        
-        # Download button
-        st.download_button(
-            "📥 Download All Responses",
-            responses_df.to_csv(index=False),
-            "skills_matrix_responses.csv",
-            "text/csv",
-            key='download-csv'
-        )
-        
-        # Show preview of responses
-        st.subheader("Preview of Responses")
-        st.dataframe(responses_df)
-        
-        # Add some basic analytics
-        st.subheader("Response Analytics")
-        col1, col2 = st.columns(2)
+        # Top section with key metrics and download
+        col1, col2, col3 = st.columns([1,1,2])
         with col1:
             st.metric("Total Submissions", len(responses_df))
         with col2:
             st.metric("Unique Participants", len(responses_df['Submitter Email'].unique()))
+        with col3:
+            # Download and refresh buttons side by side
+            subcol1, subcol2 = st.columns(2)
+            with subcol1:
+                st.download_button(
+                    "📥 Download All Responses",
+                    responses_df.to_csv(index=False),
+                    "skills_matrix_responses.csv",
+                    "text/csv",
+                    key='download-csv'
+                )
+            with subcol2:
+                if st.button("🔄 Refresh Data"):
+                    st.experimental_rerun()
         
-        # Show submissions over time
-        st.subheader("Submissions Over Time")
-        responses_df['Timestamp'] = pd.to_datetime(responses_df['Timestamp'])
-        daily_submissions = responses_df.groupby(responses_df['Timestamp'].dt.date).size().reset_index()
-        daily_submissions.columns = ['Date', 'Submissions']
-        st.line_chart(daily_submissions.set_index('Date'))
+        # Tabs for different analysis views
+        tab1, tab2, tab3, tab4 = st.tabs(["Skills Analysis", "Expertise Distribution", "Time Trends", "Raw Data"])
+        
+        # Tab 1: Skills Analysis
+        with tab1:
+            st.subheader("Average Points by Skill")
+            # Calculate average points for each skill (excluding metadata columns)
+            skill_cols = [col for col in responses_df.columns if col not in ['Response ID', 'Timestamp', 'Submitter Email']]
+            avg_points = responses_df[skill_cols].mean().sort_values(ascending=False)
+            
+            # Create a bar chart for average points
+            st.bar_chart(avg_points)
+            
+            # Show top skills
+            st.subheader("Most Common Primary Expertise Areas")
+            primary_expertise = pd.DataFrame()
+            for skill in skill_cols:
+                primary_count = len(responses_df[responses_df[skill] >= 8])
+                if primary_count > 0:
+                    primary_expertise.at[skill, 'Count'] = primary_count
+            
+            primary_expertise = primary_expertise.sort_values('Count', ascending=False)
+            st.bar_chart(primary_expertise['Count'])
+        
+        # Tab 2: Expertise Distribution
+        with tab2:
+            st.subheader("Distribution of Expertise Levels")
+            
+            def get_expertise_counts(row):
+                primary = sum(1 for x in row if x >= 8)
+                secondary = sum(1 for x in row if 3 <= x < 8)
+                limited = sum(1 for x in row if 1 <= x < 3)
+                return pd.Series({'Primary': primary, 'Secondary': secondary, 'Limited': limited})
+            
+            expertise_dist = responses_df[skill_cols].apply(get_expertise_counts, axis=1)
+            
+            # Average number of skills per expertise level
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Avg Primary Skills", f"{expertise_dist['Primary'].mean():.1f}")
+            with col2:
+                st.metric("Avg Secondary Skills", f"{expertise_dist['Secondary'].mean():.1f}")
+            with col3:
+                st.metric("Avg Limited Skills", f"{expertise_dist['Limited'].mean():.1f}")
+            
+            # Distribution chart
+            st.subheader("Distribution of Expertise Levels Across Team")
+            expertise_totals = expertise_dist.sum()
+            st.bar_chart(expertise_totals)
+        
+        # Tab 3: Time Trends
+        with tab3:
+            st.subheader("Submission Trends")
+            
+            # Convert timestamp to datetime if it's not already
+            responses_df['Timestamp'] = pd.to_datetime(responses_df['Timestamp'])
+            
+            # Daily submissions
+            daily_submissions = responses_df.groupby(responses_df['Timestamp'].dt.date).size().reset_index()
+            daily_submissions.columns = ['Date', 'Submissions']
+            
+            st.line_chart(daily_submissions.set_index('Date'))
+            
+            # Cumulative submissions
+            st.subheader("Cumulative Submissions")
+            daily_submissions['Cumulative'] = daily_submissions['Submissions'].cumsum()
+            st.line_chart(daily_submissions.set_index('Date')['Cumulative'])
+        
+        # Tab 4: Raw Data
+        with tab4:
+            st.subheader("Raw Response Data")
+            st.dataframe(responses_df)
             
     else:
         st.info("No responses collected yet.")
