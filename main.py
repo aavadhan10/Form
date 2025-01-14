@@ -62,6 +62,20 @@ def show_admin_page():
     else:
         st.info("No responses collected yet.")
 
+def update_total_points():
+    """Update the total points in session state"""
+    st.session_state.total_points = sum(st.session_state.skills.values())
+
+def get_expertise_level(value):
+    """Return expertise level emoji based on value"""
+    if value >= 8:
+        return "🔵 Primary"
+    elif value >= 3:
+        return "🟢 Secondary"
+    elif value >= 1:
+        return "🟡 Limited"
+    return ""
+
 def main():
     # Sidebar for navigation
     with st.sidebar:
@@ -97,7 +111,17 @@ def main():
     # Email input
     submitter_email = st.text_input("Enter your email:")
     
-    # Visual progress indicator
+    # Instructions
+    st.markdown("### Instructions")
+    st.markdown("""
+    - You have **90 points** to allocate across all skills
+    - Maximum **10 points** per skill
+    - Primary expertise (8-10 points)
+    - Secondary expertise (3-7 points)
+    - Limited expertise (1-2 points)
+    """)
+    
+    # Visual progress indicator (moved outside form)
     col1, col2 = st.columns([2, 1])
     with col1:
         progress = st.session_state.total_points / MAX_TOTAL_POINTS
@@ -108,44 +132,32 @@ def main():
     if st.session_state.total_points > MAX_TOTAL_POINTS:
         st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}")
     
+    st.markdown("---")
+    
+    # Create input fields for each skill (outside form)
+    skill_inputs = {}
+    for skill in st.session_state.skills.keys():
+        col1, col2, col3 = st.columns([3, 1, 1])
+        
+        with col1:
+            st.markdown(f"**{skill}**")
+        with col2:
+            value = st.number_input(
+                f"{skill} points",
+                min_value=0,
+                max_value=MAX_POINTS_PER_SKILL,
+                value=st.session_state.skills[skill],
+                key=f"input_{skill}",
+                on_change=update_total_points
+            )
+            st.session_state.skills[skill] = value
+            skill_inputs[skill] = value
+        
+        with col3:
+            st.markdown(get_expertise_level(value))
+    
+    # Submit form
     with st.form("skills_matrix"):
-        st.markdown("### Instructions")
-        st.markdown("""
-        - You have **90 points** to allocate across all skills
-        - Maximum **10 points** per skill
-        - Primary expertise (8-10 points)
-        - Secondary expertise (3-7 points)
-        - Limited expertise (1-2 points)
-        """)
-        
-        st.markdown("---")
-        
-        # Create input fields for each skill
-        for skill in st.session_state.skills.keys():
-            col1, col2, col3 = st.columns([3, 1, 1])
-            
-            with col1:
-                st.markdown(f"**{skill}**")
-            with col2:
-                value = st.number_input(
-                    f"{skill} points",
-                    min_value=0,
-                    max_value=MAX_POINTS_PER_SKILL,
-                    value=st.session_state.skills[skill],
-                    key=f"input_{skill}",
-                )
-                st.session_state.skills[skill] = value
-            
-            with col3:
-                if value >= 8:
-                    st.markdown("🔵 Primary")
-                elif value >= 3:
-                    st.markdown("🟢 Secondary")
-                elif value >= 1:
-                    st.markdown("🟡 Limited")
-        
-        st.session_state.total_points = sum(st.session_state.skills.values())
-        
         submitted = st.form_submit_button("Submit Skills Matrix")
         
         if submitted:
