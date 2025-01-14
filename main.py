@@ -268,7 +268,7 @@ def main():
     Please note, some skills listed may be industry specific or with a specialization. If not applicable, you can leave blank or put 0.
     
     ### Points Allocation Overview
-    You have **90 points** to allocate across **172 skills** listed in the matrix. These points represent your level of expertise 
+    You have **90 points** to allocate across **168 skills** listed in the matrix. These points represent your level of expertise 
     and experience in each area. The goal is to allocate your points in a way that best reflects your true areas of strength. 
     You'll need to make thoughtful choices about where your expertise lies, prioritizing key skills over areas of limited 
     experience to ensure we capture an honest reflection of your abilities.
