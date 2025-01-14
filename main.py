@@ -76,6 +76,79 @@ def get_expertise_level(value):
         return "🟡 Limited"
     return ""
 
+def is_email_unique(email):
+    """Check if email is unique in responses (except for test email)"""
+    if email == "aavadhan@umich.edu":  # Allow multiple submissions for test email
+        return True
+    
+    if 'all_responses' in st.session_state and not st.session_state.all_responses.empty:
+        existing_emails = st.session_state.all_responses['Submitter Email'].tolist()
+        return email not in existing_emails
+    return True
+
+def show_skills_form(submitter_email):
+    """Display the skills matrix form"""
+    # Constants
+    MAX_TOTAL_POINTS = 90
+    MAX_POINTS_PER_SKILL = 10
+    
+    # Visual progress indicator
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        progress = st.session_state.total_points / MAX_TOTAL_POINTS
+        st.progress(progress)
+    with col2:
+        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
+    
+    if st.session_state.total_points > MAX_TOTAL_POINTS:
+        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}")
+    
+    st.markdown("---")
+    
+    # Create input fields for each skill
+    skill_inputs = {}
+    for skill in st.session_state.skills.keys():
+        col1, col2, col3 = st.columns([3, 1, 1])
+        
+        with col1:
+            st.markdown(f"**{skill}**")
+        with col2:
+            value = st.number_input(
+                f"{skill} points",
+                min_value=0,
+                max_value=MAX_POINTS_PER_SKILL,
+                value=st.session_state.skills[skill],
+                key=f"input_{skill}",
+                on_change=update_total_points
+            )
+            st.session_state.skills[skill] = value
+            skill_inputs[skill] = value
+        
+        with col3:
+            st.markdown(get_expertise_level(value))
+    
+    # Submit form
+    with st.form("skills_matrix"):
+        submitted = st.form_submit_button("Submit Skills Matrix")
+        
+        if submitted:
+            if st.session_state.total_points > MAX_TOTAL_POINTS:
+                st.error(f"Cannot submit: Total points ({st.session_state.total_points}) exceed maximum of {MAX_TOTAL_POINTS}")
+            else:
+                response_data = {
+                    'Response ID': str(uuid.uuid4())[:8],
+                    'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    'Submitter Email': submitter_email,
+                    **st.session_state.skills
+                }
+                
+                save_response(response_data)
+                st.success("Skills matrix submitted successfully!")
+                
+                # Reset form
+                st.session_state.skills = {k: 0 for k in st.session_state.skills}
+                st.session_state.total_points = 0
+
 def main():
     # Sidebar for navigation
     with st.sidebar:
@@ -131,94 +204,28 @@ def main():
     - **Technology Transfer Agreements:** 🟡 2 points (Limited experience)
     """)
     
-    # Initialize session state
-    if 'total_points' not in st.session_state:
-        st.session_state.total_points = 0
-    if 'skills' not in st.session_state:
-        st.session_state.skills = {
-            'Advertising and Labeling Regulations (Pharma/BioTech)': 0,
-            'Advertising and Marketing Regulations (Retail and Consumer)': 0,
-            'Advertising and Marketing Regulations (Skill 3)': 0,
-            'Advertising and Marketing Regulations (Skill 4)': 0,
-            'Advertising and Marketing Regulations (Skill 5)': 0,
-            'Advertising and Marketing Regulations (Skill 6)': 0,
-        }
-    
-    # Constants
-    MAX_TOTAL_POINTS = 90
-    MAX_POINTS_PER_SKILL = 10
-    
-    # Email input
+    # Email input before showing the form
     submitter_email = st.text_input("Enter your email:")
     
-    # Instructions
-    st.markdown("### Instructions")
-    st.markdown("""
-    - You have **90 points** to allocate across all skills
-    - Maximum **10 points** per skill
-    - 🔵 Primary expertise (8-10 points)
-    - 🟢 Secondary expertise (3-7 points)
-    - 🟡 Limited expertise (1-2 points)
-    """)
-    
-    # Visual progress indicator (moved outside form)
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        progress = st.session_state.total_points / MAX_TOTAL_POINTS
-        st.progress(progress)
-    with col2:
-        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
-    
-    if st.session_state.total_points > MAX_TOTAL_POINTS:
-        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}")
-    
-    st.markdown("---")
-    
-    # Create input fields for each skill (outside form)
-    skill_inputs = {}
-    for skill in st.session_state.skills.keys():
-        col1, col2, col3 = st.columns([3, 1, 1])
+    # Initialize session state after valid email
+    if submitter_email:
+        if not is_email_unique(submitter_email):
+            st.error("This email has already submitted a response. Please use a different email address.")
+            return
+            
+        if 'total_points' not in st.session_state:
+            st.session_state.total_points = 0
+        if 'skills' not in st.session_state:
+            st.session_state.skills = {
+                'Advertising and Labeling Regulations (Pharma/BioTech)': 0,
+                'Advertising and Marketing Regulations (Retail and Consumer)': 0,
+                'Advertising and Marketing Regulations (Skill 3)': 0,
+                'Advertising and Marketing Regulations (Skill 4)': 0,
+                'Advertising and Marketing Regulations (Skill 5)': 0,
+                'Advertising and Marketing Regulations (Skill 6)': 0,
+            }
         
-        with col1:
-            st.markdown(f"**{skill}**")
-        with col2:
-            value = st.number_input(
-                f"{skill} points",
-                min_value=0,
-                max_value=MAX_POINTS_PER_SKILL,
-                value=st.session_state.skills[skill],
-                key=f"input_{skill}",
-                on_change=update_total_points
-            )
-            st.session_state.skills[skill] = value
-            skill_inputs[skill] = value
-        
-        with col3:
-            st.markdown(get_expertise_level(value))
-    
-    # Submit form
-    with st.form("skills_matrix"):
-        submitted = st.form_submit_button("Submit Skills Matrix")
-        
-        if submitted:
-            if not submitter_email:
-                st.error("Please enter your email address")
-            elif st.session_state.total_points > MAX_TOTAL_POINTS:
-                st.error(f"Cannot submit: Total points ({st.session_state.total_points}) exceed maximum of {MAX_TOTAL_POINTS}")
-            else:
-                response_data = {
-                    'Response ID': str(uuid.uuid4())[:8],
-                    'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    'Submitter Email': submitter_email,
-                    **st.session_state.skills
-                }
-                
-                save_response(response_data)
-                st.success("Skills matrix submitted successfully!")
-                
-                # Reset form
-                st.session_state.skills = {k: 0 for k in st.session_state.skills}
-                st.session_state.total_points = 0
+        show_skills_form(submitter_email)
 
 if __name__ == "__main__":
     main()
