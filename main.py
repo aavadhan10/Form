@@ -2,9 +2,40 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import uuid
+import os
 
 # Add this at the very top of your script
 st.set_page_config(page_title="Skills Matrix", layout="wide")
+
+# Constants
+RESPONSES_FILE = "skills_matrix_responses.csv"
+
+def load_responses():
+    """Load responses from CSV file"""
+    try:
+        if os.path.exists(RESPONSES_FILE):
+            return pd.read_csv(RESPONSES_FILE)
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error loading responses: {e}")
+        return pd.DataFrame()
+
+def save_response(response_data):
+    """Save response to CSV file"""
+    try:
+        # Load existing responses
+        responses_df = load_responses()
+        
+        # Add new response
+        new_response = pd.DataFrame([response_data])
+        updated_responses = pd.concat([responses_df, new_response], ignore_index=True)
+        
+        # Save back to CSV
+        updated_responses.to_csv(RESPONSES_FILE, index=False)
+        return True
+    except Exception as e:
+        st.error(f"Error saving response: {e}")
+        return False
 
 def check_password():
     """Returns `True` if the user had the correct password."""
@@ -32,25 +63,24 @@ def check_password():
         st.error("😕 Password incorrect")
     return False
 
-def save_response(response_data):
-    """Save response to the session state dataframe"""
-    if 'all_responses' not in st.session_state:
-        st.session_state.all_responses = pd.DataFrame()
-    
-    new_response = pd.DataFrame([response_data])
-    st.session_state.all_responses = pd.concat([st.session_state.all_responses, new_response], ignore_index=True)
-
 def show_admin_page():
     """Shows the admin page with download functionality"""
     st.header("Admin Dashboard")
     
-    if 'all_responses' in st.session_state and not st.session_state.all_responses.empty:
-        st.success(f"Total responses collected: {len(st.session_state.all_responses)}")
+    # Load responses from file
+    responses_df = load_responses()
+    
+    if not responses_df.empty:
+        st.success(f"Total responses collected: {len(responses_df)}")
+        
+        # Add refresh button
+        if st.button("🔄 Refresh Data"):
+            st.experimental_rerun()
         
         # Download button
         st.download_button(
             "📥 Download All Responses",
-            st.session_state.all_responses.to_csv(index=False),
+            responses_df.to_csv(index=False),
             "skills_matrix_responses.csv",
             "text/csv",
             key='download-csv'
@@ -58,7 +88,23 @@ def show_admin_page():
         
         # Show preview of responses
         st.subheader("Preview of Responses")
-        st.dataframe(st.session_state.all_responses)
+        st.dataframe(responses_df)
+        
+        # Add some basic analytics
+        st.subheader("Response Analytics")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Total Submissions", len(responses_df))
+        with col2:
+            st.metric("Unique Participants", len(responses_df['Submitter Email'].unique()))
+        
+        # Show submissions over time
+        st.subheader("Submissions Over Time")
+        responses_df['Timestamp'] = pd.to_datetime(responses_df['Timestamp'])
+        daily_submissions = responses_df.groupby(responses_df['Timestamp'].dt.date).size().reset_index()
+        daily_submissions.columns = ['Date', 'Submissions']
+        st.line_chart(daily_submissions.set_index('Date'))
+            
     else:
         st.info("No responses collected yet.")
 
@@ -81,8 +127,9 @@ def is_email_unique(email):
     if email == "aavadhan@umich.edu":  # Allow multiple submissions for test email
         return True
     
-    if 'all_responses' in st.session_state and not st.session_state.all_responses.empty:
-        existing_emails = st.session_state.all_responses['Submitter Email'].tolist()
+    responses_df = load_responses()
+    if not responses_df.empty:
+        existing_emails = responses_df['Submitter Email'].tolist()
         return email not in existing_emails
     return True
 
@@ -142,12 +189,14 @@ def show_skills_form(submitter_email):
                     **st.session_state.skills
                 }
                 
-                save_response(response_data)
-                st.success("Skills matrix submitted successfully!")
-                
-                # Reset form
-                st.session_state.skills = {k: 0 for k in st.session_state.skills}
-                st.session_state.total_points = 0
+                if save_response(response_data):
+                    st.success("Skills matrix submitted successfully!")
+                    
+                    # Reset form
+                    st.session_state.skills = {k: 0 for k in st.session_state.skills}
+                    st.session_state.total_points = 0
+                else:
+                    st.error("There was an error saving your response. Please try again.")
 
 def main():
     # Sidebar for navigation
