@@ -64,6 +64,16 @@ def show_admin_page():
     else:
         st.info("No responses collected yet.")
 
+def get_expertise_color(value):
+    """Returns colored text based on expertise level"""
+    if value >= 8:
+        return "🔵 Primary"
+    elif value >= 3:
+        return "🟢 Secondary"
+    elif value >= 1:
+        return "🟡 Limited"
+    return "⚪️ None"
+
 def main():
     # Sidebar for navigation
     with st.sidebar:
@@ -78,10 +88,6 @@ def main():
     
     # Main form page
     st.title("Caravel Law Skills Matrix")
-    
-    # Display total entries counter at the top
-    total_entries = len(st.session_state.get('all_responses', pd.DataFrame()))
-    st.info(f"Total responses collected so far: {total_entries}")
     
     # Initialize session state
     if 'total_points' not in st.session_state:
@@ -105,20 +111,16 @@ def main():
     if submitter_email and is_email_used(submitter_email):
         st.warning("⚠️ This email has already submitted a response. Each person can only submit once.")
     
-    # Visual progress indicator with bigger, more prominent display
-    st.markdown("---")
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown(f"### Points Used: {st.session_state.total_points} / {MAX_TOTAL_POINTS}")
+    # Visual progress indicator
+    col1, col2 = st.columns([2, 1])
+    with col1:
         progress = st.session_state.total_points / MAX_TOTAL_POINTS
         st.progress(progress)
-        
-        # Show remaining points
-        remaining_points = MAX_TOTAL_POINTS - st.session_state.total_points
-        if remaining_points >= 0:
-            st.info(f"You have {remaining_points} points remaining to allocate")
-        else:
-            st.error(f"You have exceeded the maximum by {abs(remaining_points)} points")
+    with col2:
+        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
+    
+    if st.session_state.total_points > MAX_TOTAL_POINTS:
+        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}")
     
     with st.form("skills_matrix"):
         st.markdown("### Instructions")
@@ -150,14 +152,7 @@ def main():
                 st.session_state.skills[skill] = value
             
             with col3:
-                if value >= 8:
-                    st.markdown("🔵 Primary")
-                elif value >= 3:
-                    st.markdown("🟢 Secondary")
-                elif value >= 1:
-                    st.markdown("🟡 Limited")
-                else:
-                    st.markdown("⚪️ None")
+                st.markdown(get_expertise_color(value))
         
         st.session_state.total_points = sum(st.session_state.skills.values())
         
