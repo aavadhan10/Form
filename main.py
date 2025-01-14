@@ -308,6 +308,22 @@ def show_admin_page():
             )
             st.plotly_chart(fig_breakdown, use_container_width=True)
 
+            # Summary statistics table
+            st.subheader("Summary Statistics")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Average Skills per Person:**")
+                avg_stats = pd.DataFrame({
+                    'Expertise Level': ['Primary', 'Secondary', 'Limited'],
+                    'Average Skills': [
+                        f"{expertise_dist['Primary'].mean():.1f}",
+                        f"{expertise_dist['Secondary'].mean():.1f}",
+                        f"{expertise_dist['Limited'].mean():.1f}"
+                    ],
+                    'Color': ['🔵', '🟢', '🟡']
+                })
+                st.table(avg_stats)
             
             with col2:
                 st.markdown("**Top Skills by Expertise Level:**")
@@ -469,6 +485,7 @@ def show_skills_form(submitter_email):
                 
                 if save_response(response_data):
                     st.success("Skills matrix submitted successfully!")
+                    st.balloons()  # Add balloons on successful submission
                     
                     # Reset form
                     st.session_state.skills = {k: 0 for k in st.session_state.skills}
