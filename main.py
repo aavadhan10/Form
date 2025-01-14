@@ -379,17 +379,18 @@ def show_admin_page():
 
 def update_total_points():
     """Update the total points in session state"""
-    # Calculate sum from the actual input values, not the session state
-    MAX_TOTAL_POINTS = 90
     total = 0
     for skill in st.session_state.skills.keys():
         input_key = f"input_{skill}"
         if input_key in st.session_state:
             total += st.session_state[input_key]
     
-    # Ensure total does not exceed maximum points
-    st.session_state.total_points = min(total, MAX_TOTAL_POINTS)
-
+    # Update total points
+    st.session_state.total_points = total
+    
+    # Set a flag if points exceed maximum
+    st.session_state.points_exceeded = total > MAX_TOTAL_POINTS
+    
 def get_expertise_level(value):
     """Return expertise level emoji based on value"""
     if value >= 8:
@@ -413,9 +414,11 @@ def is_email_unique(email):
 
 def show_skills_form(submitter_email):
     """Display the skills matrix form"""
-    # Constants
-    MAX_TOTAL_POINTS = 90
-    MAX_POINTS_PER_SKILL = 10
+    # Ensure these session state variables exist
+    if 'total_points' not in st.session_state:
+        st.session_state.total_points = 0
+    if 'points_exceeded' not in st.session_state:
+        st.session_state.points_exceeded = False
     
     # Visual progress indicator
     col1, col2 = st.columns([2, 1])
@@ -426,10 +429,14 @@ def show_skills_form(submitter_email):
     with col2:
         st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
     
-    if st.session_state.total_points > MAX_TOTAL_POINTS:
-        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}")
-        # Optionally, reset points or prevent further input
-        st.session_state.total_points = MAX_TOTAL_POINTS
+    # Error handling for points
+    if st.session_state.points_exceeded:
+        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}. "
+                 "Please reduce your point allocations before submitting.")
+        
+        # Optional: Add a visual indicator of how many points over the limit
+        points_over = st.session_state.total_points - MAX_TOTAL_POINTS
+        st.warning(f"You are currently {points_over} points over the limit.")
     
     st.markdown("---")
     
@@ -460,25 +467,28 @@ def show_skills_form(submitter_email):
         submitted = st.form_submit_button("Submit Skills Matrix")
         
         if submitted:
-            if st.session_state.total_points > MAX_TOTAL_POINTS:
+            # Prevent submission if points are exceeded
+            if st.session_state.points_exceeded:
                 st.error(f"Cannot submit: Total points ({st.session_state.total_points}) exceed maximum of {MAX_TOTAL_POINTS}")
-            else:
-                response_data = {
-                    'Response ID': str(uuid.uuid4())[:8],
-                    'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    'Submitter Email': submitter_email,
-                    **st.session_state.skills
-                }
+                return
+            
+            response_data = {
+                'Response ID': str(uuid.uuid4())[:8],
+                'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'Submitter Email': submitter_email,
+                **st.session_state.skills
+            }
+            
+            if save_response(response_data):
+                st.success("Skills matrix submitted successfully!")
+                st.balloons()  # Add balloons on successful submission
                 
-                if save_response(response_data):
-                    st.success("Skills matrix submitted successfully!")
-                    st.balloons()  # Add balloons on successful submission
-                    
-                    # Reset form
-                    st.session_state.skills = {k: 0 for k in st.session_state.skills}
-                    st.session_state.total_points = 0
-                else:
-                    st.error("There was an error saving your response. Please try again.")
+                # Reset form
+                st.session_state.skills = {k: 0 for k in st.session_state.skills}
+                st.session_state.total_points = 0
+                st.session_state.points_exceeded = False
+            else:
+                st.error("There was an error saving your response. Please try again.")
 
 def main():
     # Sidebar for navigation
