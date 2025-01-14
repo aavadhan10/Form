@@ -5,19 +5,27 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-import os
 
-def send_email_with_csv(df):
-    # Email settings
-    sender_email = "your-email@gmail.com"  # Replace with your email
-    sender_password = "your-app-password"   # Replace with your app password
+def send_email_with_csv(df, submitter_email):
+    # Email settings - using aavadhan@umich.edu for both sending and receiving
+    sender_email = "aavadhan@umich.edu"
     receiver_email = "aavadhan@umich.edu"
     
     # Create message
     msg = MIMEMultipart()
-    msg['Subject'] = f'Skills Matrix Response - {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+    msg['Subject'] = f'Skills Matrix Response from {submitter_email}'
     msg['From'] = sender_email
     msg['To'] = receiver_email
+    
+    # Add email body with submission info
+    body = f"""
+    New Skills Matrix Submission
+    
+    From: {submitter_email}
+    Time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    Total Points Used: {sum(df.iloc[0][2:])}  # Skipping timestamp and email columns
+    """
+    msg.attach(MIMEText(body, 'plain'))
     
     # Convert DataFrame to CSV and attach
     csv_data = df.to_csv(index=False)
@@ -28,7 +36,7 @@ def send_email_with_csv(df):
     # Send email
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(sender_email, sender_password)
+            server.login(sender_email, st.secrets["email"]["password"])
             server.send_message(msg)
         return True
     except Exception as e:
@@ -56,9 +64,11 @@ def main():
     MAX_POINTS_PER_SKILL = 10
     
     # Email input
-    email = st.text_input("Enter your email:")
+    submitter_email = st.text_input("Enter your email:")
     
-    # Display total points
+    # Display total points with progress bar
+    progress = st.session_state.total_points / MAX_TOTAL_POINTS
+    st.progress(progress)
     st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
     
     if st.session_state.total_points > MAX_TOTAL_POINTS:
@@ -78,30 +88,23 @@ def main():
         st.markdown("---")
         
         # Create columns for layout
-        col1, col2 = st.columns([3, 1])
-        
-        # Track changes in total points
-        new_total = 0
-        
-        # Create input fields for each skill
         for skill in st.session_state.skills.keys():
+            col1, col2, col3 = st.columns([3, 1, 1])
+            
             with col1:
                 st.markdown(f"**{skill}**")
             with col2:
-                key = f"input_{skill}"
                 value = st.number_input(
                     f"{skill} points",
                     min_value=0,
                     max_value=MAX_POINTS_PER_SKILL,
                     value=st.session_state.skills[skill],
-                    key=key,
-                    label_visibility="collapsed"
+                    key=f"input_{skill}",
                 )
-                
                 st.session_state.skills[skill] = value
-                new_total += value
-                
-                # Display expertise level
+            
+            with col3:
+                # Display expertise level with colored badges
                 if value >= 8:
                     st.markdown("🔵 Primary")
                 elif value >= 3:
@@ -109,13 +112,14 @@ def main():
                 elif value >= 1:
                     st.markdown("🟡 Limited")
         
-        st.session_state.total_points = new_total
+        # Update total points
+        st.session_state.total_points = sum(st.session_state.skills.values())
         
         # Submit button
         submitted = st.form_submit_button("Submit Skills Matrix")
         
         if submitted:
-            if not email:
+            if not submitter_email:
                 st.error("Please enter your email address")
             elif st.session_state.total_points > MAX_TOTAL_POINTS:
                 st.error(f"Cannot submit: Total points ({st.session_state.total_points}) exceed maximum of {MAX_TOTAL_POINTS}")
@@ -123,14 +127,14 @@ def main():
                 # Create DataFrame for submission
                 response_data = {
                     'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    'Email': email,
+                    'Submitter Email': submitter_email,
                     **st.session_state.skills
                 }
                 df = pd.DataFrame([response_data])
                 
                 # Send email with CSV
-                if send_email_with_csv(df):
-                    st.success("Skills matrix submitted successfully! Response has been emailed.")
+                if send_email_with_csv(df, submitter_email):
+                    st.success("✅ Skills matrix submitted successfully! You'll receive a copy at your email.")
                     # Reset form
                     st.session_state.skills = {k: 0 for k in st.session_state.skills}
                     st.session_state.total_points = 0
