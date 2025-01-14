@@ -116,9 +116,9 @@ def main():
     st.markdown("""
     - You have **90 points** to allocate across all skills
     - Maximum **10 points** per skill
-    - Primary expertise (8-10 points)
-    - Secondary expertise (3-7 points)
-    - Limited expertise (1-2 points)
+    - 🔵 Primary expertise (8-10 points)
+    - 🟢 Secondary expertise (3-7 points)
+    - 🟡 Limited expertise (1-2 points)
     """)
     
     # Visual progress indicator (moved outside form)
