@@ -713,7 +713,7 @@ if submitter_email:
             'Waste Management and Recycling (Skill 168)': 0
         }
     
-        show_skills_form(submitter_email)
+ show_skills_form(submitter_email)
 
 if __name__ == "__main__":
     main()
