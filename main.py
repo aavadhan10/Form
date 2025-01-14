@@ -153,7 +153,7 @@ def main():
     # Sidebar for navigation
     with st.sidebar:
         st.title("Navigation")
-        page = st.radio("Go to", ["Submit Response", "Admin"])
+        page = st.radio("Go to", ["Caravel Skills Matrix", "Admin"])
     
     if page == "Admin":
         if check_password():
