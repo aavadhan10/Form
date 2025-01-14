@@ -79,6 +79,10 @@ def main():
     # Main form page
     st.title("Caravel Law Skills Matrix")
     
+    # Display total entries counter at the top
+    total_entries = len(st.session_state.get('all_responses', pd.DataFrame()))
+    st.info(f"Total responses collected so far: {total_entries}")
+    
     # Initialize session state
     if 'total_points' not in st.session_state:
         st.session_state.total_points = 0
@@ -101,16 +105,20 @@ def main():
     if submitter_email and is_email_used(submitter_email):
         st.warning("⚠️ This email has already submitted a response. Each person can only submit once.")
     
-    # Visual progress indicator
-    col1, col2 = st.columns([2, 1])
-    with col1:
+    # Visual progress indicator with bigger, more prominent display
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown(f"### Points Used: {st.session_state.total_points} / {MAX_TOTAL_POINTS}")
         progress = st.session_state.total_points / MAX_TOTAL_POINTS
         st.progress(progress)
-    with col2:
-        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
-    
-    if st.session_state.total_points > MAX_TOTAL_POINTS:
-        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}")
+        
+        # Show remaining points
+        remaining_points = MAX_TOTAL_POINTS - st.session_state.total_points
+        if remaining_points >= 0:
+            st.info(f"You have {remaining_points} points remaining to allocate")
+        else:
+            st.error(f"You have exceeded the maximum by {abs(remaining_points)} points")
     
     with st.form("skills_matrix"):
         st.markdown("### Instructions")
@@ -149,7 +157,7 @@ def main():
                 elif value >= 1:
                     st.markdown("🟡 Limited")
                 else:
-                    st.markdown("⚪️ None")  # Added indicator for 0 points
+                    st.markdown("⚪️ None")
         
         st.session_state.total_points = sum(st.session_state.skills.values())
         
