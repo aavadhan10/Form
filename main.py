@@ -104,6 +104,52 @@ def show_admin_page():
             
         # Tab 2: Skills Analysis
         with tab2:
+            # Summary statistics table
+            st.subheader("Summary Statistics")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Average Skills per Person:**")
+                avg_stats = pd.DataFrame({
+                    'Expertise Level': ['Primary', 'Secondary', 'Limited'],
+                    'Average Skills': [
+                        f"{expertise_dist['Primary'].mean():.1f}",
+                        f"{expertise_dist['Secondary'].mean():.1f}",
+                        f"{expertise_dist['Limited'].mean():.1f}"
+                    ],
+                    'Color': ['🔵', '🟢', '🟡']
+                })
+                st.table(avg_stats)
+            
+            with col2:
+                st.markdown("**Top Skills by Expertise Level:**")
+                # Get top skills for each level
+                top_skills = {}
+                for skill in skill_cols:
+                    primary_count = len(responses_df[responses_df[skill] >= 8])
+                    secondary_count = len(responses_df[(responses_df[skill] >= 3) & (responses_df[skill] < 8)])
+                    limited_count = len(responses_df[(responses_df[skill] > 0) & (responses_df[skill] < 3)])
+                    
+                    if primary_count > 0:
+                        if 'Primary' not in top_skills or top_skills['Primary'][1] < primary_count:
+                            top_skills['Primary'] = (skill, primary_count)
+                    if secondary_count > 0:
+                        if 'Secondary' not in top_skills or top_skills['Secondary'][1] < secondary_count:
+                            top_skills['Secondary'] = (skill, secondary_count)
+                    if limited_count > 0:
+                        if 'Limited' not in top_skills or top_skills['Limited'][1] < limited_count:
+                            top_skills['Limited'] = (skill, limited_count)
+                
+                top_skills_df = pd.DataFrame({
+                    'Expertise Level': ['Primary 🔵', 'Secondary 🟢', 'Limited 🟡'],
+                    'Most Common Skill': [
+                        f"{top_skills.get('Primary', ('None', 0))[0]} ({top_skills.get('Primary', ('None', 0))[1]})",
+                        f"{top_skills.get('Secondary', ('None', 0))[0]} ({top_skills.get('Secondary', ('None', 0))[1]})",
+                        f"{top_skills.get('Limited', ('None', 0))[0]} ({top_skills.get('Limited', ('None', 0))[1]})"
+                    ]
+                })
+                st.table(top_skills_df)
+
             st.subheader("Average Points by Skill")
             # Calculate average points for each skill (excluding metadata columns)
             skill_cols = [col for col in responses_df.columns if col not in ['Response ID', 'Timestamp', 'Submitter Email']]
