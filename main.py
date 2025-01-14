@@ -380,12 +380,15 @@ def show_admin_page():
 def update_total_points():
     """Update the total points in session state"""
     # Calculate sum from the actual input values, not the session state
+    MAX_TOTAL_POINTS = 90
     total = 0
     for skill in st.session_state.skills.keys():
         input_key = f"input_{skill}"
         if input_key in st.session_state:
             total += st.session_state[input_key]
-    st.session_state.total_points = total
+    
+    # Ensure total does not exceed maximum points
+    st.session_state.total_points = min(total, MAX_TOTAL_POINTS)
 
 def get_expertise_level(value):
     """Return expertise level emoji based on value"""
@@ -417,13 +420,16 @@ def show_skills_form(submitter_email):
     # Visual progress indicator
     col1, col2 = st.columns([2, 1])
     with col1:
-        progress = st.session_state.total_points / MAX_TOTAL_POINTS
+        # Ensure progress is between 0 and 1
+        progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
         st.progress(progress)
     with col2:
         st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
     
     if st.session_state.total_points > MAX_TOTAL_POINTS:
         st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}")
+        # Optionally, reset points or prevent further input
+        st.session_state.total_points = MAX_TOTAL_POINTS
     
     st.markdown("---")
     
