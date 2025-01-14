@@ -8,20 +8,16 @@ st.set_page_config(page_title="Skills Matrix", layout="wide")
 
 def check_password():
     """Returns `True` if the user had the correct password."""
-
     def password_entered():
-        """Checks whether a password entered by the user is correct."""
         if st.session_state["password"] == st.secrets["admin_password"]:
             st.session_state["password_correct"] = True
-            st.session_state.password = ''  # Clear the password field
+            st.session_state.password = ''
         else:
             st.session_state["password_correct"] = False
 
-    # Return True if the password is validated
     if st.session_state.get("password_correct", False):
         return True
 
-    # Show input for password
     st.text_input(
         "Password", 
         type="password", 
@@ -30,6 +26,12 @@ def check_password():
     )
     if "password_correct" in st.session_state:
         st.error("😕 Password incorrect")
+    return False
+
+def is_email_used(email):
+    """Check if email has already submitted a response"""
+    if 'all_responses' in st.session_state and not st.session_state.all_responses.empty:
+        return email in st.session_state.all_responses['Submitter Email'].values
     return False
 
 def save_response(response_data):
@@ -94,8 +96,10 @@ def main():
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
-    # Email input
+    # Email input with instant validation
     submitter_email = st.text_input("Enter your email:")
+    if submitter_email and is_email_used(submitter_email):
+        st.warning("⚠️ This email has already submitted a response. Each person can only submit once.")
     
     # Visual progress indicator
     col1, col2 = st.columns([2, 1])
@@ -116,6 +120,7 @@ def main():
         - Primary expertise (8-10 points)
         - Secondary expertise (3-7 points)
         - Limited expertise (1-2 points)
+        - You can only submit once per email address
         """)
         
         st.markdown("---")
@@ -151,6 +156,8 @@ def main():
         if submitted:
             if not submitter_email:
                 st.error("Please enter your email address")
+            elif is_email_used(submitter_email):
+                st.error("This email has already submitted a response. Each person can only submit once.")
             elif st.session_state.total_points > MAX_TOTAL_POINTS:
                 st.error(f"Cannot submit: Total points ({st.session_state.total_points}) exceed maximum of {MAX_TOTAL_POINTS}")
             else:
@@ -162,8 +169,7 @@ def main():
                 }
                 
                 save_response(response_data)
-                st.success("✅ Skills matrix submitted successfully!")
-                st.balloons()
+                st.success("Skills matrix submitted successfully!")
                 
                 # Reset form
                 st.session_state.skills = {k: 0 for k in st.session_state.skills}
