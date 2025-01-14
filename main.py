@@ -177,26 +177,6 @@ def show_admin_page():
             )
             fig.update_layout(showlegend=False, xaxis_tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
-            
-            # Show top skills with color coding
-            st.subheader("Most Common Primary Expertise Areas")
-            primary_expertise = pd.DataFrame()
-            for skill in skill_cols:
-                primary_count = len(responses_df[responses_df[skill] >= 8])
-                if primary_count > 0:
-                    primary_expertise.at[skill, 'Count'] = primary_count
-            
-            if not primary_expertise.empty:
-                primary_expertise = primary_expertise.sort_values('Count', ascending=False)
-                fig2 = px.bar(
-                    x=primary_expertise.index,
-                    y=primary_expertise['Count'],
-                    color=primary_expertise['Count'],
-                    color_continuous_scale=[[0, '#4169E1'], [1, '#4169E1']],  # Blue for primary expertise
-                    title='Number of Primary Expertise Areas'
-                )
-                fig2.update_layout(showlegend=False, xaxis_tickangle=-45)
-                st.plotly_chart(fig2, use_container_width=True)
             # Calculate average points for each skill (excluding metadata columns)
             skill_cols = [col for col in responses_df.columns if col not in ['Response ID', 'Timestamp', 'Submitter Email']]
             avg_points = responses_df[skill_cols].mean().sort_values(ascending=False)
