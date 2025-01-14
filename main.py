@@ -110,7 +110,13 @@ def show_admin_page():
 
 def update_total_points():
     """Update the total points in session state"""
-    st.session_state.total_points = sum(st.session_state.skills.values())
+    # Calculate sum from the actual input values, not the session state
+    total = 0
+    for skill in st.session_state.skills.keys():
+        input_key = f"input_{skill}"
+        if input_key in st.session_state:
+            total += st.session_state[input_key]
+    st.session_state.total_points = total
 
 def get_expertise_level(value):
     """Return expertise level emoji based on value"""
