@@ -442,16 +442,22 @@ def show_skills_form(submitter_email):
         )
         
         with col2:
-            value = st.number_input(
-                f"{skill} points",
-                min_value=0,
-                max_value=points_available,  # This enforces the 90-point limit
-                value=current_skill_points,
-                key=f"input_{skill}",
-                on_change=update_total_points
-            )
-            st.session_state.skills[skill] = value
-            skill_inputs[skill] = value
+            try:
+                value = st.number_input(
+                    f"{skill} points",
+                    min_value=0,
+                    max_value=points_available,  # This enforces the 90-point limit
+                    value=current_skill_points,
+                    key=f"input_{skill}",
+                    on_change=update_total_points,
+                    help="You've used all 90 points. To add points here, first reduce points in other skills." if st.session_state.total_points >= MAX_TOTAL_POINTS and current_skill_points == 0 else None
+                )
+                st.session_state.skills[skill] = value
+                skill_inputs[skill] = value
+            except:
+                # If the input is invalid, show custom message
+                if st.session_state.total_points >= MAX_TOTAL_POINTS:
+                    st.error("You've used all 90 points. To add points here, first reduce points in other skills.")
         
         with col3:
             st.markdown(get_expertise_level(value))
