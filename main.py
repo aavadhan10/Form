@@ -343,7 +343,7 @@ def show_skills_form(submitter_email, submitter_name):
     with col2:
         st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
 
-    st.markdown("**You can type a number directly or use the up/down arrows to enter your points**") 
+    st.markdown("*You can type a number directly or use the up/down arrows to enter your points*") 
     
     if st.session_state.total_points >= MAX_TOTAL_POINTS:
         st.warning("You have used all 90 points. To add points to other skills, first reduce points elsewhere.")
