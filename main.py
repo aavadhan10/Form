@@ -439,7 +439,7 @@ def main():
     You'll need to make thoughtful choices about where your expertise lies, prioritizing key skills over areas of limited 
     experience to ensure we capture an honest reflection of your abilities.
    
-    ###Points Guidelines
+    ### Points Guidelines
     Maximum Points Per Skill: You can allocate a maximum of 10 points to any single skill.
     Primary Areas of Expertise: You should allocate higher points (e.g., 8-10) to the skills where you have deep expertise or significant experience.
     Secondary Areas of Expertise: For skills where you have some experience or intermediate-level knowledge, allocate moderate points (e.g., 3-7).
