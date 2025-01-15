@@ -432,8 +432,12 @@ def show_skills_form(submitter_email):
         
         # Add a close button
         if st.button("Close Survey"):
-            st.session_state.clear()
-            st.experimental_rerun()
+            # Reset all session state variables
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            # Force redirect to a blank state
+            st.markdown("Survey closed. Thank you for your participation!")
+            st.stop()
         return
     
     # Visual progress indicator
@@ -502,7 +506,7 @@ def show_skills_form(submitter_email):
             if save_response(response_data):
                 # Set form_submitted to True instead of refreshing
                 st.session_state.form_submitted = True
-                st.experimental_rerun()  # This will be the last refresh
+                st.experimental_rerun()  # This will be the last refresh to show success message
             else:
                 st.error("There was an error saving your response. Please try again.")
 def main():
