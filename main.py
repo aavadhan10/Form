@@ -26,8 +26,23 @@ def save_response(response_data):
         # Load existing responses
         responses_df = load_responses()
         
+        # Make sure all columns exist in the DataFrame
+        required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
+        for col in required_columns:
+            if col not in responses_df.columns:
+                responses_df[col] = ''
+        
         # Add new response
         new_response = pd.DataFrame([response_data])
+        
+        # Ensure columns are in the correct order
+        if not responses_df.empty:
+            # Get all columns from both DataFrames
+            all_columns = responses_df.columns.union(new_response.columns)
+            # Reindex both DataFrames with all columns
+            responses_df = responses_df.reindex(columns=all_columns)
+            new_response = new_response.reindex(columns=all_columns)
+        
         updated_responses = pd.concat([responses_df, new_response], ignore_index=True)
         
         # Save back to CSV
