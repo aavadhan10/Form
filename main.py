@@ -379,7 +379,6 @@ def show_admin_page():
 
 def update_total_points():
     """Update the total points in session state"""
-    # Calculate sum from the actual input values, not the session state
     total = 0
     for skill in st.session_state.skills.keys():
         input_key = f"input_{skill}"
@@ -414,16 +413,23 @@ def show_skills_form(submitter_email):
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
-    # Visual progress indicator
+    # Calculate progress safely
+    progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
+    
+    # Visual progress indicator with warning
+    if st.session_state.total_points > MAX_TOTAL_POINTS:
+        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}. Please reduce your allocations.")
+    
     col1, col2 = st.columns([2, 1])
     with col1:
-        progress = st.session_state.total_points / MAX_TOTAL_POINTS
         st.progress(progress)
     with col2:
-        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
-    
-    if st.session_state.total_points > MAX_TOTAL_POINTS:
-        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}")
+        points_remaining = max(0, MAX_TOTAL_POINTS - st.session_state.total_points)
+        st.metric(
+            "Points Remaining", 
+            points_remaining,
+            f"Total: {st.session_state.total_points}/{MAX_TOTAL_POINTS}"
+        )
     
     st.markdown("---")
     
@@ -434,11 +440,18 @@ def show_skills_form(submitter_email):
         
         with col1:
             st.markdown(f"**{skill}**")
+        
+        # Calculate remaining points for this skill
+        points_available = min(
+            MAX_POINTS_PER_SKILL,
+            MAX_TOTAL_POINTS - (st.session_state.total_points - st.session_state.skills[skill])
+        )
+        
         with col2:
             value = st.number_input(
                 f"{skill} points",
                 min_value=0,
-                max_value=MAX_POINTS_PER_SKILL,
+                max_value=points_available,
                 value=st.session_state.skills[skill],
                 key=f"input_{skill}",
                 on_change=update_total_points
@@ -451,28 +464,34 @@ def show_skills_form(submitter_email):
     
     # Submit form
     with st.form("skills_matrix"):
-        submitted = st.form_submit_button("Submit Skills Matrix")
+        submit_disabled = st.session_state.total_points > MAX_TOTAL_POINTS
+        
+        if submit_disabled:
+            st.warning("Please adjust your point allocations to submit. Total must not exceed 90 points.")
+            
+        submitted = st.form_submit_button(
+            "Submit Skills Matrix",
+            disabled=submit_disabled
+        )
         
         if submitted:
-            if st.session_state.total_points > MAX_TOTAL_POINTS:
-                st.error(f"Cannot submit: Total points ({st.session_state.total_points}) exceed maximum of {MAX_TOTAL_POINTS}")
-            else:
-                response_data = {
-                    'Response ID': str(uuid.uuid4())[:8],
-                    'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    'Submitter Email': submitter_email,
-                    **st.session_state.skills
-                }
+            response_data = {
+                'Response ID': str(uuid.uuid4())[:8],
+                'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'Submitter Email': submitter_email,
+                **st.session_state.skills
+            }
+            
+            if save_response(response_data):
+                st.success("Skills matrix submitted successfully!")
+                st.balloons()
                 
-                if save_response(response_data):
-                    st.success("Skills matrix submitted successfully!")
-                    st.balloons()  # Add balloons on successful submission
-                    
-                    # Reset form
-                    st.session_state.skills = {k: 0 for k in st.session_state.skills}
-                    st.session_state.total_points = 0
-                else:
-                    st.error("There was an error saving your response. Please try again.")
+                # Reset form
+                st.session_state.skills = {k: 0 for k in st.session_state.skills}
+                st.session_state.total_points = 0
+                st.experimental_rerun()
+            else:
+                st.error("There was an error saving your response. Please try again.")
 
 def main():
     # Sidebar for navigation
