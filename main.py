@@ -421,6 +421,21 @@ def show_skills_form(submitter_email):
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
+    # Check if form was already submitted
+    if 'form_submitted' not in st.session_state:
+        st.session_state.form_submitted = False
+    
+    # If form was already submitted, show thank you message and exit
+    if st.session_state.form_submitted:
+        st.success("Thank you! Your skills matrix has been submitted successfully!")
+        st.balloons()
+        
+        # Add a close button
+        if st.button("Close Survey"):
+            st.session_state.clear()
+            st.experimental_rerun()
+        return
+    
     # Visual progress indicator
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -452,7 +467,7 @@ def show_skills_form(submitter_email):
                 value = st.number_input(
                     f"{skill} points",
                     min_value=0,
-                    max_value=points_available,  # This enforces the 90-point limit
+                    max_value=points_available,
                     value=current_skill_points,
                     key=f"input_{skill}",
                     on_change=update_total_points,
@@ -461,7 +476,6 @@ def show_skills_form(submitter_email):
                 st.session_state.skills[skill] = value
                 skill_inputs[skill] = value
             except:
-                # If the input is invalid, show custom message
                 if st.session_state.total_points >= MAX_TOTAL_POINTS:
                     st.error("You've used all 90 points. To add points here, first reduce points in other skills.")
         
@@ -474,7 +488,7 @@ def show_skills_form(submitter_email):
         
         if submitted:
             # Validate total points before submission
-            if abs(st.session_state.total_points - MAX_TOTAL_POINTS) > 0.1:  # Allow small floating-point differences
+            if abs(st.session_state.total_points - MAX_TOTAL_POINTS) > 0.1:
                 st.error(f"Total points must be exactly {MAX_TOTAL_POINTS}. Current total: {st.session_state.total_points}")
                 return
                 
@@ -486,13 +500,9 @@ def show_skills_form(submitter_email):
             }
             
             if save_response(response_data):
-                st.success("Skills matrix submitted successfully!")
-                st.balloons()
-                
-                # Reset form
-                st.session_state.skills = {k: 0 for k in st.session_state.skills}
-                st.session_state.total_points = 0
-                st.experimental_rerun()
+                # Set form_submitted to True instead of refreshing
+                st.session_state.form_submitted = True
+                st.experimental_rerun()  # This will be the last refresh
             else:
                 st.error("There was an error saving your response. Please try again.")
 def main():
