@@ -14,12 +14,19 @@ def load_responses():
     """Load responses from CSV file"""
     try:
         if os.path.exists(RESPONSES_FILE):
-            return pd.read_csv(RESPONSES_FILE)
-        return pd.DataFrame()
+            df = pd.read_csv(RESPONSES_FILE)
+            # Ensure all required columns exist
+            required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
+            for col in required_columns:
+                if col not in df.columns:
+                    df[col] = ''
+            return df
+        # If file doesn't exist, create empty DataFrame with required columns
+        return pd.DataFrame(columns=['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email'])
     except Exception as e:
         st.error(f"Error loading responses: {e}")
         return pd.DataFrame()
-
+        
 def save_response(response_data):
     """Save response to CSV file"""
     try:
