@@ -73,6 +73,9 @@ def show_admin_page():
     responses_df = load_responses()
     
     if not responses_df.empty:
+        # Define metadata columns to exclude from skills analysis
+        metadata_cols = ['Response ID', 'Timestamp', 'Submitter Email', 'Submitter Name']
+        
         # Top section with key metrics and download
         col1, col2, col3 = st.columns([1,1,2])
         with col1:
@@ -104,8 +107,8 @@ def show_admin_page():
             
         # Tab 2: Skills Analysis
         with tab2:
-            # Calculate skill columns and expertise distribution
-            skill_cols = [col for col in responses_df.columns if col not in ['Response ID', 'Timestamp', 'Submitter Email']]
+            # Calculate skill columns (excluding metadata columns)
+            skill_cols = [col for col in responses_df.columns if col not in metadata_cols]
             
             # Summary statistics table
             st.subheader("Summary Statistics")
@@ -113,10 +116,14 @@ def show_admin_page():
             
             # Calculate expertise distribution
             def get_expertise_counts(row):
-                primary = sum(1 for x in row if x >= 8)
-                secondary = sum(1 for x in row if 3 <= x < 8)
-                limited = sum(1 for x in row if 1 <= x < 3)
-                return pd.Series({'Primary': primary, 'Secondary': secondary, 'Limited': limited})
+                try:
+                    primary = sum(1 for x in row if isinstance(x, (int, float)) and x >= 8)
+                    secondary = sum(1 for x in row if isinstance(x, (int, float)) and 3 <= x < 8)
+                    limited = sum(1 for x in row if isinstance(x, (int, float)) and 1 <= x < 3)
+                    return pd.Series({'Primary': primary, 'Secondary': secondary, 'Limited': limited})
+                except Exception as e:
+                    print(f"Error processing row: {row}")
+                    return pd.Series({'Primary': 0, 'Secondary': 0, 'Limited': 0})
             
             expertise_dist = responses_df[skill_cols].apply(get_expertise_counts, axis=1)
             
@@ -178,22 +185,6 @@ def show_admin_page():
             )
             fig.update_layout(showlegend=False, xaxis_tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
-            # Calculate average points for each skill (excluding metadata columns)
-            skill_cols = [col for col in responses_df.columns if col not in ['Response ID', 'Timestamp', 'Submitter Email']]
-            avg_points = responses_df[skill_cols].mean().sort_values(ascending=False)
-            
-            # Create a bar chart for average points with color coding
-            fig = px.bar(
-                x=avg_points.index,
-                y=avg_points.values,
-                color=avg_points.values,
-                color_continuous_scale=[[0, '#FFE5B4'],  # Light yellow for limited
-                                      [0.3, '#90EE90'],  # Green for secondary
-                                      [0.8, '#4169E1']], # Blue for primary
-                title='Average Points by Skill'
-            )
-            fig.update_layout(showlegend=False, xaxis_tickangle=-45)
-            st.plotly_chart(fig, use_container_width=True)
             
             # Show top skills with color coding
             st.subheader("Most Common Primary Expertise Areas")
@@ -203,137 +194,17 @@ def show_admin_page():
                 if primary_count > 0:
                     primary_expertise.at[skill, 'Count'] = primary_count
             
-            primary_expertise = primary_expertise.sort_values('Count', ascending=False)
-            fig2 = px.bar(
-                x=primary_expertise.index,
-                y=primary_expertise['Count'],
-                color=primary_expertise['Count'],
-                color_continuous_scale=[[0, '#4169E1'], [1, '#4169E1']],  # Blue for primary expertise
-                title='Number of Primary Expertise Areas'
-            )
-            fig2.update_layout(showlegend=False, xaxis_tickangle=-45)
-            st.plotly_chart(fig2, use_container_width=True)
-        
-        # Tab 2: Expertise Distribution
-        with tab2:
-            st.subheader("Distribution of Expertise Levels")
-            
-            def get_expertise_counts(row):
-                primary = sum(1 for x in row if x >= 8)
-                secondary = sum(1 for x in row if 3 <= x < 8)
-                limited = sum(1 for x in row if 1 <= x < 3)
-                return pd.Series({'Primary': primary, 'Secondary': secondary, 'Limited': limited})
-            
-            expertise_dist = responses_df[skill_cols].apply(get_expertise_counts, axis=1)
-            
-            # Average number of skills per expertise level
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Avg Primary Skills", f"{expertise_dist['Primary'].mean():.1f}")
-            with col2:
-                st.metric("Avg Secondary Skills", f"{expertise_dist['Secondary'].mean():.1f}")
-            with col3:
-                st.metric("Avg Limited Skills", f"{expertise_dist['Limited'].mean():.1f}")
-            
-            # Distribution chart with colors
-            st.subheader("Distribution of Expertise Levels Across Team")
-            expertise_totals = expertise_dist.sum()
-            fig3 = go.Figure(data=[
-                go.Bar(
-                    x=['Primary', 'Secondary', 'Limited'],
-                    y=expertise_totals,
-                    marker_color=['#4169E1', '#90EE90', '#FFE5B4']  # Blue, Green, Yellow
+            if not primary_expertise.empty:
+                primary_expertise = primary_expertise.sort_values('Count', ascending=False)
+                fig2 = px.bar(
+                    x=primary_expertise.index,
+                    y=primary_expertise['Count'],
+                    color=primary_expertise['Count'],
+                    color_continuous_scale=[[0, '#4169E1'], [1, '#4169E1']],  # Blue for primary expertise
+                    title='Number of Primary Expertise Areas'
                 )
-            ])
-            fig3.update_layout(title='Distribution of Expertise Levels')
-            st.plotly_chart(fig3, use_container_width=True)
-
-            # Detailed breakdown of skills by expertise level
-            st.subheader("Detailed Expertise Breakdown")
-            
-            # Create DataFrame with skill counts by expertise level
-            def categorize_expertise(points):
-                if points >= 8:
-                    return 'Primary'
-                elif points >= 3:
-                    return 'Secondary'
-                elif points > 0:
-                    return 'Limited'
-                return 'None'
-            
-            expertise_breakdown = pd.DataFrame()
-            for skill in skill_cols:
-                skill_series = responses_df[skill].apply(categorize_expertise).value_counts()
-                expertise_breakdown[skill] = skill_series
-            
-            expertise_breakdown = expertise_breakdown.fillna(0)
-            
-            # Create a stacked bar chart for each skill
-            fig_breakdown = go.Figure()
-            
-            # Add bars for each expertise level
-            for level, color in [('Primary', '#4169E1'), ('Secondary', '#90EE90'), ('Limited', '#FFE5B4')]:
-                if level in expertise_breakdown.index:
-                    fig_breakdown.add_trace(go.Bar(
-                        name=level,
-                        x=expertise_breakdown.columns,
-                        y=expertise_breakdown.loc[level],
-                        marker_color=color
-                    ))
-            
-            fig_breakdown.update_layout(
-                barmode='stack',
-                title='Expertise Level Distribution by Skill',
-                xaxis_tickangle=-45,
-                height=600  # Make the chart taller
-            )
-            st.plotly_chart(fig_breakdown, use_container_width=True)
-
-            # Summary statistics table
-            st.subheader("Summary Statistics")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("**Average Skills per Person:**")
-                avg_stats = pd.DataFrame({
-                    'Expertise Level': ['Primary', 'Secondary', 'Limited'],
-                    'Average Skills': [
-                        f"{expertise_dist['Primary'].mean():.1f}",
-                        f"{expertise_dist['Secondary'].mean():.1f}",
-                        f"{expertise_dist['Limited'].mean():.1f}"
-                    ],
-                    'Color': ['🔵', '🟢', '🟡']
-                })
-                st.table(avg_stats)
-            
-            with col2:
-                st.markdown("**Top Skills by Expertise Level:**")
-                # Get top skills for each level
-                top_skills = {}
-                for skill in skill_cols:
-                    primary_count = len(responses_df[responses_df[skill] >= 8])
-                    secondary_count = len(responses_df[(responses_df[skill] >= 3) & (responses_df[skill] < 8)])
-                    limited_count = len(responses_df[(responses_df[skill] > 0) & (responses_df[skill] < 3)])
-                    
-                    if primary_count > 0:
-                        if 'Primary' not in top_skills or top_skills['Primary'][1] < primary_count:
-                            top_skills['Primary'] = (skill, primary_count)
-                    if secondary_count > 0:
-                        if 'Secondary' not in top_skills or top_skills['Secondary'][1] < secondary_count:
-                            top_skills['Secondary'] = (skill, secondary_count)
-                    if limited_count > 0:
-                        if 'Limited' not in top_skills or top_skills['Limited'][1] < limited_count:
-                            top_skills['Limited'] = (skill, limited_count)
-                
-                top_skills_df = pd.DataFrame({
-                    'Expertise Level': ['Primary 🔵', 'Secondary 🟢', 'Limited 🟡'],
-                    'Most Common Skill': [
-                        f"{top_skills.get('Primary', ('None', 0))[0]} ({top_skills.get('Primary', ('None', 0))[1]})",
-                        f"{top_skills.get('Secondary', ('None', 0))[0]} ({top_skills.get('Secondary', ('None', 0))[1]})",
-                        f"{top_skills.get('Limited', ('None', 0))[0]} ({top_skills.get('Limited', ('None', 0))[1]})"
-                    ]
-                })
-                st.table(top_skills_df)
+                fig2.update_layout(showlegend=False, xaxis_tickangle=-45)
+                st.plotly_chart(fig2, use_container_width=True)
         
         # Tab 3: Form Submission Trends
         with tab3:
@@ -371,9 +242,6 @@ def show_admin_page():
             ))
             fig5.update_layout(title='Cumulative Submissions Over Time')
             st.plotly_chart(fig5, use_container_width=True)
-        
-
-            
     else:
         st.info("No responses collected yet.")
 
