@@ -315,9 +315,11 @@ def show_skills_form(submitter_email, submitter_name):
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
-    # Check if form was already submitted
+    # Initialize session state
     if 'form_submitted' not in st.session_state:
         st.session_state.form_submitted = False
+    if 'total_points' not in st.session_state:
+        st.session_state.total_points = 0
     
     # If form was already submitted, show thank you message and exit
     if st.session_state.form_submitted:
@@ -334,7 +336,6 @@ def show_skills_form(submitter_email, submitter_name):
             st.stop()
         return
 
-    
     # Visual progress indicator
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -356,8 +357,12 @@ def show_skills_form(submitter_email, submitter_name):
         with col1:
             st.markdown(f"**{skill}**")
         
+        # Initialize skill points in session state if not exists
+        if f"input_{skill}" not in st.session_state:
+            st.session_state[f"input_{skill}"] = 0
+        
         # Calculate maximum points available for this skill
-        current_skill_points = st.session_state.get(f"input_{skill}", 0)
+        current_skill_points = st.session_state[f"input_{skill}"]
         remaining_points = MAX_TOTAL_POINTS - (st.session_state.total_points - current_skill_points)
         points_available = min(MAX_POINTS_PER_SKILL, remaining_points)
         
@@ -390,14 +395,15 @@ def show_skills_form(submitter_email, submitter_name):
                 except ValueError:
                     value = 0
                     st.error("Please enter a valid number")
-                    
+                
+                st.session_state[f"input_{skill}"] = value
                 st.session_state.skills[skill] = value
                 skill_inputs[skill] = value
                 
                 # Update total points after each input
                 update_total_points()
                 
-            except:
+            except Exception as e:
                 if st.session_state.total_points >= MAX_TOTAL_POINTS:
                     st.error("You've used all 90 points. To add points here, first reduce points in other skills.")
         
