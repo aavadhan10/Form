@@ -415,7 +415,7 @@ def is_email_unique(email):
         return email not in existing_emails
     return True
 
-def show_skills_form(submitter_email):
+def show_skills_form(submitter_email, submitter_name):
     """Display the skills matrix form"""
     # Constants
     MAX_TOTAL_POINTS = 90
@@ -481,6 +481,7 @@ def show_skills_form(submitter_email):
             response_data = {
                 'Response ID': str(uuid.uuid4())[:8],
                 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'Submitter Name': submitter_name,  # Added name field
                 'Submitter Email': submitter_email,
                 **st.session_state.skills
             }
