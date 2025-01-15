@@ -125,7 +125,11 @@ def show_admin_page():
         # Tab 1: Raw Data
         with tab1:
             st.subheader("Raw Response Data")
-            st.dataframe(responses_df)
+            # Reorder columns to show metadata first
+            metadata_cols = ['Response ID', 'Timestamp', 'Submitter Email', 'Submitter Name']
+            other_cols = [col for col in responses_df.columns if col not in metadata_cols]
+            ordered_cols = metadata_cols + other_cols
+            st.dataframe(responses_df[ordered_cols])
             
         # Tab 2: Skills Analysis
         with tab2:
