@@ -534,10 +534,10 @@ def main():
     submitter_email = st.text_input("Enter your email:")
     
     # Initialize session state after valid email
-if submitter_email:
-    if not is_email_unique(submitter_email):
+    if submitter_email:
+        if not is_email_unique(submitter_email):
         st.error("This email has already submitted a response. Please use a different email address.")
-        return
+            return
         
     if 'total_points' not in st.session_state:
         st.session_state.total_points = 0
