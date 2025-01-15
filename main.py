@@ -413,23 +413,18 @@ def show_skills_form(submitter_email):
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
-    # Calculate progress safely
-    progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
-    
-    # Visual progress indicator with warning
-    if st.session_state.total_points > MAX_TOTAL_POINTS:
-        st.error(f"⚠️ You have exceeded the maximum total points of {MAX_TOTAL_POINTS}. Please reduce your allocations.")
-    
+    # Visual progress indicator
     col1, col2 = st.columns([2, 1])
     with col1:
+        # Safely calculate progress
+        progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
         st.progress(progress)
     with col2:
-        points_remaining = max(0, MAX_TOTAL_POINTS - st.session_state.total_points)
-        st.metric(
-            "Points Remaining", 
-            points_remaining,
-            f"Total: {st.session_state.total_points}/{MAX_TOTAL_POINTS}"
-        )
+        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
+    
+    # Show warning when points exceed maximum
+    if st.session_state.total_points >= MAX_TOTAL_POINTS:
+        st.warning(f"⚠️ You have reached the maximum {MAX_TOTAL_POINTS} points. Consider redistributing points if needed.")
     
     st.markdown("---")
     
@@ -440,18 +435,11 @@ def show_skills_form(submitter_email):
         
         with col1:
             st.markdown(f"**{skill}**")
-        
-        # Calculate remaining points for this skill
-        points_available = min(
-            MAX_POINTS_PER_SKILL,
-            MAX_TOTAL_POINTS - (st.session_state.total_points - st.session_state.skills[skill])
-        )
-        
         with col2:
             value = st.number_input(
                 f"{skill} points",
                 min_value=0,
-                max_value=points_available,
+                max_value=MAX_POINTS_PER_SKILL,
                 value=st.session_state.skills[skill],
                 key=f"input_{skill}",
                 on_change=update_total_points
@@ -464,15 +452,7 @@ def show_skills_form(submitter_email):
     
     # Submit form
     with st.form("skills_matrix"):
-        submit_disabled = st.session_state.total_points > MAX_TOTAL_POINTS
-        
-        if submit_disabled:
-            st.warning("Please adjust your point allocations to submit. Total must not exceed 90 points.")
-            
-        submitted = st.form_submit_button(
-            "Submit Skills Matrix",
-            disabled=submit_disabled
-        )
+        submitted = st.form_submit_button("Submit Skills Matrix")
         
         if submitted:
             response_data = {
