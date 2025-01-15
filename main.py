@@ -349,72 +349,53 @@ def show_skills_form(submitter_email, submitter_name):
     
     st.markdown("---")
     
+    def validate_input(skill, value_str):
+        """Helper function to validate and convert input values"""
+        try:
+            if value_str == "":
+                return 0
+            value = float(value_str)
+            if value < 0:
+                st.error(f"Value must be >= 0")
+                return 0
+            if value > MAX_POINTS_PER_SKILL:
+                st.error(f"Value cannot exceed {MAX_POINTS_PER_SKILL}")
+                return MAX_POINTS_PER_SKILL
+            if value.is_integer():
+                return int(value)
+            return value
+        except ValueError:
+            st.error("Please enter a valid number")
+            return 0
+
     # Create input fields for each skill
-    skill_inputs = {}
-    for skill in st.session_state.skills.keys():
+    for skill in st.session_state.skills:
         col1, col2, col3 = st.columns([3, 1, 1])
         
         with col1:
             st.markdown(f"**{skill}**")
         
-        # Initialize skill points in session state if not exists
-        if f"input_{skill}" not in st.session_state:
-            st.session_state[f"input_{skill}"] = 0
-        
-        # Calculate maximum points available for this skill
-        current_skill_points = st.session_state[f"input_{skill}"]
-        remaining_points = MAX_TOTAL_POINTS - (st.session_state.total_points - current_skill_points)
-        points_available = min(MAX_POINTS_PER_SKILL, remaining_points)
-        
         with col2:
-            # Initialize value outside try block
-            value = current_skill_points
+            # Get current value from session state
+            current_value = st.session_state.skills.get(skill, 0)
             
-            try:
-                # Use text input instead of number input
-                value_str = st.text_input(
-                    f"{skill} points",
-                    value=str(current_skill_points) if current_skill_points > 0 else "",
-                    key=f"input_{skill}",
-                    help="You've used all 90 points. To add points here, first reduce points in other skills." if st.session_state.total_points >= MAX_TOTAL_POINTS and current_skill_points == 0 else None
-                )
-                
-                # Initialize value to the current session state value
-                value = current_skill_points
-
-                try:
-                    if value_str == "":
-                        value = 0
-                    else:
-                        value = float(value_str)
-                        # Validate range
-                        if value < 0:
-                            value = 0
-                            st.error(f"Value must be between 0 and {points_available}")
-                        elif value > points_available:
-                            value = points_available
-                            st.error(f"Value cannot exceed {points_available}")
-                        # Force integer if not decimal
-                        if value.is_integer():
-                            value = int(value)
-                except ValueError:
-                    value = 0
-                    st.error("Please enter a valid number")
-                
-                # Update all the state values
-                st.session_state[f"input_{skill}"] = value
-                st.session_state.skills[skill] = value
-                skill_inputs[skill] = value
-                
-                # Update total points after each input
-                update_total_points()
-                
-            except Exception as e:
-                if st.session_state.total_points >= MAX_TOTAL_POINTS:
-                    st.error("You've used all 90 points. To add points here, first reduce points in other skills.")
-        
+            # Create text input
+            value_str = st.text_input(
+                f"{skill} points",
+                value=str(current_value) if current_value > 0 else "",
+                key=f"input_{skill}",
+                help="Enter a value between 0 and 10"
+            )
+            
+            # Validate and update value
+            value = validate_input(skill, value_str)
+            st.session_state.skills[skill] = value
+            
         with col3:
             st.markdown(get_expertise_level(value))
+    
+        # Update total points after each input change
+        update_total_points()
     
     # Submit form
     with st.form("skills_matrix"):
