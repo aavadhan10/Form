@@ -415,7 +415,7 @@ def is_email_unique(email):
         return email not in existing_emails
     return True
 
-def show_skills_form(submitter_email):
+def show_skills_form(submitter_email, submitter_name):
     """Display the skills matrix form"""
     # Constants
     MAX_TOTAL_POINTS = 90
@@ -427,7 +427,7 @@ def show_skills_form(submitter_email):
     
     # If form was already submitted, show thank you message and exit
     if st.session_state.form_submitted:
-        st.success("Thank you! Your skills matrix has been submitted successfully!")
+        st.success(f"Thank you {submitter_name}! Your skills matrix has been submitted successfully!")
         st.balloons()
         
         # Add a close button
@@ -439,6 +439,7 @@ def show_skills_form(submitter_email):
             st.markdown("Survey closed. Thank you for your participation!")
             st.stop()
         return
+
     
     # Visual progress indicator
     col1, col2 = st.columns([2, 1])
@@ -498,6 +499,7 @@ def show_skills_form(submitter_email):
                 
             response_data = {
                 'Response ID': str(uuid.uuid4())[:8],
+                'Submitter Name': submitter_name,
                 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 'Submitter Email': submitter_email,
                 **st.session_state.skills
@@ -572,10 +574,11 @@ def main():
     """)
     
     # Email input before showing the form
+    submitter_name = st.text_input("Enter your full name:")
     submitter_email = st.text_input("Enter your email:")
     
-    # Initialize session state after valid email
-    if submitter_email:
+     # Initialize session state after valid inputs
+    if submitter_email and submitter_name:  # Check for both name and email
         if not is_email_unique(submitter_email):
             st.error("This email has already submitted a response. Please use a different email address.")
             return
@@ -754,7 +757,7 @@ def main():
                 'Waste Management and Recycling (Skill 168)': 0
             }
         
-        show_skills_form(submitter_email)
+        show_skills_form(submitter_email,submitter_name)
 
 if __name__ == "__main__":
     main()
