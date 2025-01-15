@@ -415,9 +415,58 @@ def is_email_unique(email):
         return email not in existing_emails
     return True
 
-def show_skills_form(submitter_email, submitter_name):
+def show_skills_form(submitter_email):
     """Display the skills matrix form"""
-    # [Previous code remains the same until the submit form section]
+    # Constants
+    MAX_TOTAL_POINTS = 90
+    MAX_POINTS_PER_SKILL = 10
+    
+    # Visual progress indicator
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
+        st.progress(progress)
+    with col2:
+        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
+    
+    if st.session_state.total_points >= MAX_TOTAL_POINTS:
+        st.warning("You have used all 90 points. To add points to other skills, first reduce points elsewhere.")
+    
+    st.markdown("---")
+    
+    # Create input fields for each skill
+    skill_inputs = {}
+    for skill in st.session_state.skills.keys():
+        col1, col2, col3 = st.columns([3, 1, 1])
+        
+        with col1:
+            st.markdown(f"**{skill}**")
+        
+        # Calculate maximum points available for this skill
+        current_skill_points = st.session_state.get(f"input_{skill}", 0)
+        remaining_points = MAX_TOTAL_POINTS - (st.session_state.total_points - current_skill_points)
+        points_available = min(MAX_POINTS_PER_SKILL, remaining_points)
+        
+        with col2:
+            try:
+                value = st.number_input(
+                    f"{skill} points",
+                    min_value=0,
+                    max_value=points_available,  # This enforces the 90-point limit
+                    value=current_skill_points,
+                    key=f"input_{skill}",
+                    on_change=update_total_points,
+                    help="You've used all 90 points. To add points here, first reduce points in other skills." if st.session_state.total_points >= MAX_TOTAL_POINTS and current_skill_points == 0 else None
+                )
+                st.session_state.skills[skill] = value
+                skill_inputs[skill] = value
+            except:
+                # If the input is invalid, show custom message
+                if st.session_state.total_points >= MAX_TOTAL_POINTS:
+                    st.error("You've used all 90 points. To add points here, first reduce points in other skills.")
+        
+        with col3:
+            st.markdown(get_expertise_level(value))
     
     # Submit form
     with st.form("skills_matrix"):
@@ -432,44 +481,20 @@ def show_skills_form(submitter_email, submitter_name):
             response_data = {
                 'Response ID': str(uuid.uuid4())[:8],
                 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                'Submitter Name': submitter_name,
                 'Submitter Email': submitter_email,
                 **st.session_state.skills
             }
             
             if save_response(response_data):
-                # Create a success container with more visible feedback
-                success_container = st.container()
-                with success_container:
-                    st.success(f"""
-                    ✅ Skills matrix submitted successfully!
-                    
-                    Thank you, {submitter_name}! Your response has been recorded.
-                    Response ID: {response_data['Response ID']}
-                    Timestamp: {response_data['Timestamp']}
-                    """)
-                    
-                    # Add balloons with a small delay to ensure they're visible
-                    time.sleep(0.5)  # Small delay before balloons
-                    st.balloons()
-                    
-                    # Add a clear confirmation message
-                    st.info("You can now close this page or submit another response with a different email.")
+                st.success("Skills matrix submitted successfully!")
+                st.balloons()
                 
                 # Reset form
-                for skill in st.session_state.skills:
-                    if f"input_{skill}" in st.session_state:
-                        del st.session_state[f"input_{skill}"]
                 st.session_state.skills = {k: 0 for k in st.session_state.skills}
                 st.session_state.total_points = 0
-                
-                # Force a rerun to clear the form
                 st.experimental_rerun()
             else:
-                st.error("""
-                ❌ There was an error saving your response. 
-                Please try again or contact support if the problem persists.
-                """)
+                st.error("There was an error saving your response. Please try again.")
 def main():
     # Sidebar for navigation
     with st.sidebar:
@@ -504,7 +529,7 @@ def main():
     You'll need to make thoughtful choices about where your expertise lies, prioritizing key skills over areas of limited 
     experience to ensure we capture an honest reflection of your abilities.
 
-    ### Points Guidelines:
+    ###Points Guidelines:
     Maximum Points Per Skill: You can allocate a maximum of 10 points to any single skill.
     Primary Areas of Expertise: You should allocate higher points (e.g., 8-10) to the skills where you have deep expertise or significant experience.
     Secondary Areas of Expertise: For skills where you have some experience or intermediate-level knowledge, allocate moderate points (e.g., 3-7).
@@ -533,12 +558,11 @@ def main():
     - **Technology Transfer Agreements:** 🟡 2 points (Limited experience)
     """)
     
-    # Add name and email inputs before showing the form
-    submitter_name = st.text_input("Enter your name:", key="name_input")
-    submitter_email = st.text_input("Enter your email:", key="email_input")
+    # Email input before showing the form
+    submitter_email = st.text_input("Enter your email:")
     
-    # Initialize session state after valid input
-    if submitter_name and submitter_email:  # Check for both name and email
+    # Initialize session state after valid email
+    if submitter_email:
         if not is_email_unique(submitter_email):
             st.error("This email has already submitted a response. Please use a different email address.")
             return
@@ -717,8 +741,7 @@ def main():
                 'Waste Management and Recycling (Skill 168)': 0
             }
         
-        show_skills_form(submitter_email, submitter_name)  # Pass both name and email to the form
-
+        show_skills_form(submitter_email)
 
 if __name__ == "__main__":
     main()
