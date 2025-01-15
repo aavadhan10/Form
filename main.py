@@ -454,7 +454,7 @@ def main():
     Distribute your 90 points across the skills based on your expertise. Remember, the objective is to highlight your primary 
     strengths while providing an honest reflection of your experience in other areas. 
     
-    **You can enter in a number between 1 and 10 or you could use the arrows to increase or decrease the number.**
+    **Enter a number between 0 and 10 for each skill you want to rate.**
     
     **3. Consider Balance**
     While you are free to allocate up to 10 points for a single skill, keep in mind that spreading your points too thinly may 
