@@ -530,7 +530,7 @@ def main():
     You'll need to make thoughtful choices about where your expertise lies, prioritizing key skills over areas of limited 
     experience to ensure we capture an honest reflection of your abilities.
 
-    ###Points Guidelines:
+    ### Points Guidelines:
     Maximum Points Per Skill: You can allocate a maximum of 10 points to any single skill.
     Primary Areas of Expertise: You should allocate higher points (e.g., 8-10) to the skills where you have deep expertise or significant experience.
     Secondary Areas of Expertise: For skills where you have some experience or intermediate-level knowledge, allocate moderate points (e.g., 3-7).
@@ -559,11 +559,12 @@ def main():
     - **Technology Transfer Agreements:** 🟡 2 points (Limited experience)
     """)
     
-    # Email input before showing the form
-    submitter_email = st.text_input("Enter your email:")
+    # Add name and email inputs before showing the form
+    submitter_name = st.text_input("Enter your name:", key="name_input")
+    submitter_email = st.text_input("Enter your email:", key="email_input")
     
-    # Initialize session state after valid email
-    if submitter_email:
+    # Initialize session state after valid input
+    if submitter_name and submitter_email:  # Check for both name and email
         if not is_email_unique(submitter_email):
             st.error("This email has already submitted a response. Please use a different email address.")
             return
@@ -742,7 +743,8 @@ def main():
                 'Waste Management and Recycling (Skill 168)': 0
             }
         
-        show_skills_form(submitter_email)
+        show_skills_form(submitter_email, submitter_name)  # Pass both name and email to the form
+
 
 if __name__ == "__main__":
     main()
