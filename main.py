@@ -416,15 +416,13 @@ def show_skills_form(submitter_email):
     # Visual progress indicator
     col1, col2 = st.columns([2, 1])
     with col1:
-        # Safely calculate progress
         progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
         st.progress(progress)
     with col2:
         st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
     
-    # Show warning when points exceed maximum
     if st.session_state.total_points >= MAX_TOTAL_POINTS:
-        st.warning(f"⚠️ You have reached the maximum {MAX_TOTAL_POINTS} points. Consider redistributing points if needed.")
+        st.warning("You have used all 90 points. To add points to other skills, first reduce points elsewhere.")
     
     st.markdown("---")
     
@@ -435,12 +433,20 @@ def show_skills_form(submitter_email):
         
         with col1:
             st.markdown(f"**{skill}**")
+        
+        # Calculate maximum points available for this skill
+        current_skill_points = st.session_state.skills[skill]
+        points_available = min(
+            MAX_POINTS_PER_SKILL,
+            MAX_TOTAL_POINTS - (st.session_state.total_points - current_skill_points)
+        )
+        
         with col2:
             value = st.number_input(
                 f"{skill} points",
                 min_value=0,
-                max_value=MAX_POINTS_PER_SKILL,
-                value=st.session_state.skills[skill],
+                max_value=points_available,  # This enforces the 90-point limit
+                value=current_skill_points,
                 key=f"input_{skill}",
                 on_change=update_total_points
             )
@@ -472,7 +478,6 @@ def show_skills_form(submitter_email):
                 st.experimental_rerun()
             else:
                 st.error("There was an error saving your response. Please try again.")
-
 def main():
     # Sidebar for navigation
     with st.sidebar:
