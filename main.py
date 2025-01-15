@@ -383,8 +383,16 @@ def update_total_points():
     for skill in st.session_state.skills.keys():
         input_key = f"input_{skill}"
         if input_key in st.session_state:
-            total += st.session_state[input_key]
-    st.session_state.total_points = total
+            try:
+                value = float(st.session_state[input_key])
+                if value.is_integer():
+                    total += int(value)
+                else:
+                    total += value
+            except (ValueError, TypeError):
+                continue
+    st.session_state.total_points = round(total, 1)  # Round to 1 decimal place for consistency
+
 
 def get_expertise_level(value):
     """Return expertise level emoji based on value"""
@@ -435,11 +443,9 @@ def show_skills_form(submitter_email):
             st.markdown(f"**{skill}**")
         
         # Calculate maximum points available for this skill
-        current_skill_points = st.session_state.skills[skill]
-        points_available = min(
-            MAX_POINTS_PER_SKILL,
-            MAX_TOTAL_POINTS - (st.session_state.total_points - current_skill_points)
-        )
+        current_skill_points = st.session_state.get(f"input_{skill}", 0)
+        remaining_points = MAX_TOTAL_POINTS - (st.session_state.total_points - current_skill_points)
+        points_available = min(MAX_POINTS_PER_SKILL, remaining_points)
         
         with col2:
             try:
@@ -467,6 +473,11 @@ def show_skills_form(submitter_email):
         submitted = st.form_submit_button("Submit Skills Matrix")
         
         if submitted:
+            # Validate total points before submission
+            if abs(st.session_state.total_points - MAX_TOTAL_POINTS) > 0.1:  # Allow small floating-point differences
+                st.error(f"Total points must be exactly {MAX_TOTAL_POINTS}. Current total: {st.session_state.total_points}")
+                return
+                
             response_data = {
                 'Response ID': str(uuid.uuid4())[:8],
                 'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
