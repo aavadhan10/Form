@@ -315,11 +315,9 @@ def show_skills_form(submitter_email, submitter_name):
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
-    # Initialize session state
+    # Check if form was already submitted
     if 'form_submitted' not in st.session_state:
         st.session_state.form_submitted = False
-    if 'total_points' not in st.session_state:
-        st.session_state.total_points = 0
     
     # If form was already submitted, show thank you message and exit
     if st.session_state.form_submitted:
@@ -336,6 +334,7 @@ def show_skills_form(submitter_email, submitter_name):
             st.stop()
         return
 
+    
     # Visual progress indicator
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -349,53 +348,38 @@ def show_skills_form(submitter_email, submitter_name):
     
     st.markdown("---")
     
-    def validate_input(skill, value_str):
-        """Helper function to validate and convert input values"""
-        try:
-            if value_str == "":
-                return 0
-            value = float(value_str)
-            if value < 0:
-                st.error(f"Value must be >= 0")
-                return 0
-            if value > MAX_POINTS_PER_SKILL:
-                st.error(f"Value cannot exceed {MAX_POINTS_PER_SKILL}")
-                return MAX_POINTS_PER_SKILL
-            if value.is_integer():
-                return int(value)
-            return value
-        except ValueError:
-            st.error("Please enter a valid number")
-            return 0
-
     # Create input fields for each skill
-    for skill in st.session_state.skills:
+    skill_inputs = {}
+    for skill in st.session_state.skills.keys():
         col1, col2, col3 = st.columns([3, 1, 1])
         
         with col1:
             st.markdown(f"**{skill}**")
         
+        # Calculate maximum points available for this skill
+        current_skill_points = st.session_state.get(f"input_{skill}", 0)
+        remaining_points = MAX_TOTAL_POINTS - (st.session_state.total_points - current_skill_points)
+        points_available = min(MAX_POINTS_PER_SKILL, remaining_points)
+        
         with col2:
-            # Get current value from session state
-            current_value = st.session_state.skills.get(skill, 0)
-            
-            # Create text input
-            value_str = st.text_input(
-                f"{skill} points",
-                value=str(current_value) if current_value > 0 else "",
-                key=f"input_{skill}",
-                help="Enter a value between 0 and 10"
-            )
-            
-            # Validate and update value
-            value = validate_input(skill, value_str)
-            st.session_state.skills[skill] = value
-            
+            try:
+                value = st.number_input(
+                    f"{skill} points",
+                    min_value=0,
+                    max_value=points_available,
+                    value=current_skill_points,
+                    key=f"input_{skill}",
+                    on_change=update_total_points,
+                    help="You've used all 90 points. To add points here, first reduce points in other skills." if st.session_state.total_points >= MAX_TOTAL_POINTS and current_skill_points == 0 else None
+                )
+                st.session_state.skills[skill] = value
+                skill_inputs[skill] = value
+            except:
+                if st.session_state.total_points >= MAX_TOTAL_POINTS:
+                    st.error("You've used all 90 points. To add points here, first reduce points in other skills.")
+        
         with col3:
             st.markdown(get_expertise_level(value))
-    
-        # Update total points after each input change
-        update_total_points()
     
     # Submit form
     with st.form("skills_matrix"):
@@ -470,7 +454,7 @@ def main():
     Distribute your 90 points across the skills based on your expertise. Remember, the objective is to highlight your primary 
     strengths while providing an honest reflection of your experience in other areas. 
     
-    **Enter a number between 0 and 10 for each skill you want to rate.**
+    **You can enter in a number between 1 and 10 or you could use the arrows to increase or decrease the number.**
     
     **3. Consider Balance**
     While you are free to allocate up to 10 points for a single skill, keep in mind that spreading your points too thinly may 
