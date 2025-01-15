@@ -367,6 +367,9 @@ def show_skills_form(submitter_email, submitter_name):
         points_available = min(MAX_POINTS_PER_SKILL, remaining_points)
         
         with col2:
+            # Initialize value outside try block
+            value = current_skill_points
+            
             try:
                 # Use text input instead of number input
                 value_str = st.text_input(
@@ -376,7 +379,9 @@ def show_skills_form(submitter_email, submitter_name):
                     help="You've used all 90 points. To add points here, first reduce points in other skills." if st.session_state.total_points >= MAX_TOTAL_POINTS and current_skill_points == 0 else None
                 )
                 
-                # Convert and validate input
+                # Initialize value to the current session state value
+                value = current_skill_points
+
                 try:
                     if value_str == "":
                         value = 0
@@ -396,6 +401,7 @@ def show_skills_form(submitter_email, submitter_name):
                     value = 0
                     st.error("Please enter a valid number")
                 
+                # Update all the state values
                 st.session_state[f"input_{skill}"] = value
                 st.session_state.skills[skill] = value
                 skill_inputs[skill] = value
