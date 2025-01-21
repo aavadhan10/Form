@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import uuid
 import os
+import streamlit.components.v1 as components
 
 # Add this at the very top of your script
 st.set_page_config(page_title="Skills Matrix", layout="wide")
@@ -286,6 +287,13 @@ def update_total_points():
             except (ValueError, TypeError):
                 continue
     st.session_state.total_points = round(total, 1)  # Round to 1 decimal place for consistency
+    
+    # Add alert state management
+    if total >= 90 and not st.session_state.get('alert_shown', False):
+        st.session_state.show_alert = True
+        st.session_state.alert_shown = True
+    elif total < 90:
+        st.session_state.alert_shown = False
 
 
 def get_expertise_level(value):
@@ -315,6 +323,10 @@ def show_skills_form(submitter_email, submitter_name):
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
+    # Initialize alert state
+    if 'show_alert' not in st.session_state:
+        st.session_state.show_alert = False
+    
     # Check if form was already submitted
     if 'form_submitted' not in st.session_state:
         st.session_state.form_submitted = False
@@ -333,6 +345,37 @@ def show_skills_form(submitter_email, submitter_name):
             st.markdown("Survey closed. Thank you for your participation!")
             st.stop()
         return
+
+    # Add the Points Alert component
+    components.html(
+        """
+        <div id="react-root"></div>
+        <script>
+            const root = document.getElementById('react-root');
+            const Component = React.memo(({ isOpen, onClose }) => {
+                return React.createElement(PointsAlert, { isOpen, onClose });
+            });
+            
+            ReactDOM.render(
+                React.createElement(Component, {
+                    isOpen: %s,
+                    onClose: () => {
+                        window.parent.postMessage({
+                            type: 'streamlit:message',
+                            data: { type: 'closeAlert' }
+                        }, '*');
+                    }
+                }),
+                root
+            );
+        </script>
+        """ % str(st.session_state.show_alert).lower(),
+        height=0
+    )
+    
+    # Handle alert close action
+    if st.session_state.get('show_alert', False):
+        st.session_state.show_alert = False
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
