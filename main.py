@@ -137,7 +137,7 @@ def show_admin_page():
                     st.experimental_rerun()
             with subcol3:
                 # Optional: Add a button to clear all responses
-                if st.button("🗑️ Clear All Responses", type="warning"):
+                if st.button("🗑️ Clear All Responses", help="This will permanently delete all responses"):
                     clear_all_responses()
                     st.experimental_rerun()
         
