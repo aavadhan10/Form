@@ -122,8 +122,8 @@ def show_admin_page():
         with col2:
             st.metric("Unique Participants", len(responses_df['Submitter Email'].unique()))
         with col3:
-            # Download and refresh buttons side by side
-            subcol1, subcol2, subcol3 = st.columns(3)
+            # Download button side by side
+            subcol1, subcol2 = st.columns(2)
             with subcol1:
                 st.download_button(
                     "📥 Download All Responses",
@@ -134,11 +134,6 @@ def show_admin_page():
                 )
             with subcol2:
                 if st.button("🔄 Refresh Data"):
-                    st.experimental_rerun()
-            with subcol3:
-                # Optional: Add a button to clear all responses
-                if st.button("🗑️ Clear All Responses", help="This will permanently delete all responses"):
-                    clear_all_responses()
                     st.experimental_rerun()
         
         # Tabs for different analysis views
@@ -290,6 +285,8 @@ def show_admin_page():
             ))
             fig5.update_layout(title='Cumulative Submissions Over Time')
             st.plotly_chart(fig5, use_container_width=True)
+    else:
+        st.info("No responses collected yet.")
         
 # New helper functions for admin operations
 def delete_response_by_id(response_id):
