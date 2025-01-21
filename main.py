@@ -329,74 +329,21 @@ def show_skills_form(submitter_email, submitter_name):
     # Add modal HTML
     if st.session_state.get('show_modal', False):
         modal_html = """
-        <div id="fixedModal" style="
-            display: flex;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 9999;
-            background-color: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        ">
-            <div style="
-                background-color: white;
-                padding: 2rem;
-                border-radius: 8px;
-                max-width: 400px;
-                width: 90%;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                margin: 20px;
-                position: relative;
-                top: 50%;
-                transform: translateY(-50%);
-            ">
-                <h2 style="
-                    margin-bottom: 1rem;
-                    font-size: 1.5rem;
-                    font-weight: bold;
-                    text-align: center;
-                    color: #1a1a1a;
-                ">Maximum Points Reached</h2>
-                
-                <p style="
-                    margin-bottom: 1.5rem;
-                    text-align: center;
-                    line-height: 1.5;
-                    color: #4a4a4a;
-                ">You have used all 90 points. To add points to other skills, you'll need to reallocate points from existing skills.</p>
-                
-                <div style="text-align: center;">
-                    <button onclick="closeFixedModal()" style="
-                        background-color: #0066cc;
-                        color: white;
-                        padding: 0.75rem 1.5rem;
-                        border: none;
-                        border-radius: 4px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        transition: background-color 0.2s;
-                    ">OK, I'll Reallocate My Points</button>
-                </div>
+        <div id="myModal" style="display:block; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; 
+            background-color:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center;">
+            <div style="background-color:white; padding:20px; border-radius:5px; width:400px; text-align:center;">
+                <h2 style="margin-bottom:20px;">Maximum Points Reached</h2>
+                <p style="margin-bottom:20px;">You have used all 90 points. To add points to other skills, 
+                   you'll need to reallocate points from existing skills.</p>
+                <button onclick="closeModal()" style="padding:10px 20px; background-color:#0066cc; color:white; 
+                    border:none; border-radius:5px; cursor:pointer;">OK, I'll Reallocate My Points</button>
             </div>
         </div>
         <script>
-            function closeFixedModal() {
-                document.getElementById('fixedModal').style.display = 'none';
+            function closeModal() {
+                document.getElementById('myModal').style.display = 'none';
                 window.parent.postMessage({type: 'modal_closed'}, '*');
             }
-            
-            // Prevent scrolling when modal is open
-            document.body.style.overflow = 'hidden';
-            
-            // Restore scrolling when modal is closed
-            window.addEventListener('message', function(event) {
-                if (event.data.type === 'modal_closed') {
-                    document.body.style.overflow = 'auto';
-                }
-            });
         </script>
         """
         st.components.v1.html(modal_html, height=0)
