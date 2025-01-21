@@ -272,7 +272,7 @@ def show_admin_page():
         st.info("No responses collected yet.")
 
 def update_total_points():
-    """Update the total points in session state and show modal when hitting 90 points"""
+    """Update the total points in session state"""
     total = 0
     for skill in st.session_state.skills.keys():
         input_key = f"input_{skill}"
@@ -285,14 +285,9 @@ def update_total_points():
                     total += value
             except (ValueError, TypeError):
                 continue
-    
-    new_total = round(total, 1)  # Round to 1 decimal place for consistency
-    
-    # Check if we just hit 90 points and haven't shown the modal yet
-    if new_total >= 90 and st.session_state.total_points < 90:
-        st.session_state.show_90_points_modal = True
-    
-    st.session_state.total_points = new_total
+    st.session_state.total_points = round(total, 1)  # Round to 1 decimal place for consistency
+
+
 def get_expertise_level(value):
     """Return expertise level emoji based on value"""
     if value >= 8:
@@ -338,69 +333,6 @@ def show_skills_form(submitter_email, submitter_name):
             st.markdown("Survey closed. Thank you for your participation!")
             st.stop()
         return
-
-    # Show the 90 points modal if needed
-    if st.session_state.get('show_90_points_modal', False):
-        # Add CSS for modal overlay and positioning
-        if st.session_state.get('show_90_points_modal', False):
-            st.markdown("""
-                <style>
-                    .stButton button {
-                        z-index: 1002 !important;
-                        position: relative;
-                    }
-                    .modal-overlay {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: rgba(0, 0, 0, 0.5);
-                        z-index: 1000;
-                    }
-                    .modal-content {
-                        position: fixed;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        background: white;
-                        padding: 2rem;
-                        border-radius: 5px;
-                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                        width: 90%;
-                        max-width: 500px;
-                        text-align: center;
-                        z-index: 1001;
-                    }
-                    .modal-title {
-                        color: #FF4B4B;
-                        font-size: 1.5rem;
-                        margin-bottom: 1rem;
-                    }
-                    .modal-text {
-                        font-size: 1rem;
-                        margin-bottom: 1.5rem;
-                        text-align: left;
-                    }
-                </style>
-                <div class="modal-overlay"></div>
-                <div class="modal-content">
-                    <div class="modal-title">🎉 Maximum Points Reached!</div>
-                    <div class="modal-text">
-                        You have now allocated all available points. To add points to other skills, 
-                        you'll need to reduce points from your current allocations.<br><br>
-                        Review your selections and adjust as needed to best reflect your expertise across different skills.
-                    </div>
-            """, unsafe_allow_html=True)
-            
-            # Center the button
-            col1, col2, col3 = st.columns([1,1,1])
-            with col2:
-                if st.button("OK, I'll adjust my values", type="primary"):
-                    st.session_state.show_90_points_modal = False
-                    st.rerun()
-                    
-            st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
@@ -470,6 +402,7 @@ def main():
     # Initialize total_points in session state if it doesn't exist
     if 'total_points' not in st.session_state:
         st.session_state.total_points = 0
+
     # Sidebar for navigation and points tracking
     with st.sidebar:
         st.title("Navigation")
