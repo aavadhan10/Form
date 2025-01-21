@@ -412,8 +412,38 @@ def main():
         
     # Show modal when 90 points is reached
     if st.session_state.show_90_points_modal:
-        modal = st.container()
-        with modal:
+        # Add CSS for the modal overlay and centering
+        st.markdown("""
+            <style>
+                .stMarkdown {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 5px;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+                    z-index: 999;
+                    width: 80%;
+                    max-width: 600px;
+                }
+                .overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.5);
+                    z-index: 998;
+                }
+            </style>
+            <div class="overlay"></div>
+        """, unsafe_allow_html=True)
+        
+        # Center column for modal content
+        col1, col2, col3 = st.columns([1,2,1])
+        with col2:
             st.markdown("### Maximum Points Reached! 🎉")
             st.markdown("""
                 You have now allocated all available points. To add points to other skills,
