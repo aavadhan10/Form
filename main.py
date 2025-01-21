@@ -404,23 +404,71 @@ def main():
         st.session_state.total_points = 0
     if 'previous_total' not in st.session_state:
         st.session_state.previous_total = 0
+    if 'show_warning' not in st.session_state:
+        st.session_state.show_warning = False
     
-    # Check if we just hit 90 points (comparing with previous total)
+    # Check if we just hit 90 points
     if st.session_state.previous_total < 90 and st.session_state.total_points >= 90:
-        # Create a warning dialog using columns to center it
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.warning("""
-                ### ⚠️ Maximum Points Reached!
-                
-                You have reached the maximum of 90 points. To add points to other skills, 
-                you will need to first reduce points from existing skills.
-                
-                Click anywhere outside this message to continue.
-            """)
-            # Add a small delay to ensure the warning is visible
-            import time
-            time.sleep(0.5)
+        st.session_state.show_warning = True
+    
+    # Display modal warning if triggered
+    if st.session_state.show_warning:
+        # Insert custom CSS for the modal overlay
+        st.markdown("""
+            <style>
+                div[data-modal-container='true'] {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    z-index: 999;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+                div[data-modal='true'] {
+                    background-color: white;
+                    padding: 2rem;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    max-width: 500px;
+                    width: 90%;
+                    text-align: center;
+                }
+            </style>
+            <div data-modal-container='true'>
+                <div data-modal='true'>
+                    <h2>⚠️ Maximum Points Reached!</h2>
+                    <p>You have reached the maximum of 90 points.</p>
+                    <p>To add points to other skills, you will need to first reduce points from existing skills.</p>
+                    <button onclick='window.warning_acknowledged()' style='
+                        background-color: #FF4B4B;
+                        color: white;
+                        padding: 0.5rem 1rem;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        margin-top: 1rem;
+                    '>OK, Got it!</button>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # JavaScript to handle button click
+        st.markdown("""
+            <script>
+                window.warning_acknowledged = function() {
+                    document.querySelector('div[data-modal-container="true"]').style.display = 'none';
+                }
+            </script>
+        """, unsafe_allow_html=True)
+        
+        # Add a button in Streamlit to close the warning
+        if st.button("Close Warning"):
+            st.session_state.show_warning = False
+            st.experimental_rerun()
     
     # Update previous_total for next check
     st.session_state.previous_total = st.session_state.total_points
