@@ -291,54 +291,6 @@ def show_admin_page():
             fig5.update_layout(title='Cumulative Submissions Over Time')
             st.plotly_chart(fig5, use_container_width=True)
         
-       # Tab 4: Response Management
-    with tab4:
-    st.subheader("Response Management")
-    
-    # Select response to view or delete
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Detailed response view
-        view_response_name = st.selectbox(
-            "View Specific Participant's Response", 
-            options=[''] + list(responses_df['Submitter Name'].unique())
-        )
-        if view_response_name:
-            selected_response = responses_df[responses_df['Submitter Name'] == view_response_name]
-            st.write("Selected Response Details:")
-            st.dataframe(selected_response)
-    
-    with col2:
-        # Delete response by name functionality
-        delete_response_name = st.selectbox(
-            "Delete Specific Participant's Response", 
-            options=[''] + list(responses_df['Submitter Name'].unique())
-        )
-        if delete_response_name:
-            if st.button(f"Confirm Delete Response for {delete_response_name}", type="secondary"):
-                # Update delete function to work with name
-                def delete_response_by_name(name):
-                    """Delete a specific response by submitter name"""
-                    try:
-                        responses_df = load_responses()
-                        
-                        # Remove the response with the matching name
-                        updated_responses = responses_df[responses_df['Submitter Name'] != name]
-                        
-                        # Save the updated responses
-                        with file_lock:
-                            updated_responses.to_csv(RESPONSES_FILE, index=False)
-                        
-                        st.success(f"Response for {name} deleted successfully.")
-                        return True
-                    except Exception as e:
-                        st.error(f"Error deleting response: {e}")
-                        return False
-                
-                # Call the delete function
-                delete_response_by_name(delete_response_name)
-                st.experimental_rerun()
 # New helper functions for admin operations
 def delete_response_by_id(response_id):
     """Delete a specific response by its ID"""
