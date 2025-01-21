@@ -365,6 +365,7 @@ def show_skills_form(submitter_email, submitter_name):
                     width: 90%;
                     max-width: 500px;
                     text-align: center;
+                    z-index: 1001;
                 }
                 .modal-title {
                     color: #FF4B4B;
@@ -376,6 +377,10 @@ def show_skills_form(submitter_email, submitter_name):
                     margin-bottom: 1.5rem;
                     text-align: left;
                 }
+                .streamlit-button {
+                    z-index: 1002;
+                    position: relative;
+                }
             </style>
             <div class="modal-overlay">
                 <div class="modal-content">
@@ -385,17 +390,21 @@ def show_skills_form(submitter_email, submitter_name):
                         you'll need to reduce points from your current allocations.<br><br>
                         Review your selections and adjust as needed to best reflect your expertise across different skills.
                     </div>
-                </div>
-            </div>
+                    <div class="streamlit-button">
         """
         st.markdown(modal_content, unsafe_allow_html=True)
         
-        # Center the button with columns
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col2:
-            if st.button("OK, I'll adjust my values", type="primary"):  # Made button primary color
-                st.session_state.show_90_points_modal = False
-                st.rerun()
+        # Put button directly after modal content
+        if st.button("OK, I'll adjust my values", type="primary", key="modal_close"):
+            st.session_state.show_90_points_modal = False
+            st.rerun()
+            
+        # Close the modal HTML structure
+        st.markdown("""
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
