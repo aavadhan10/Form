@@ -333,20 +333,49 @@ def show_skills_form(submitter_email, submitter_name):
             st.markdown("Survey closed. Thank you for your participation!")
             st.stop()
         return
+ # Create a sticky container for the progress indicator
+    with st.container():
+        st.markdown(
+            """
+            <style>
+                [data-testid="stSidebarUserContent"] {
+                    position: relative;
+                }
+                .sticky-progress {
+                    position: sticky;
+                    top: 0;
+                    z-index: 999;
+                    background-color: white;
+                    padding: 1rem 0;
+                    border-bottom: 1px solid #f0f0f0;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        with st.container():
+            st.markdown('<div class="sticky-progress">', unsafe_allow_html=True)
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
+                st.progress(progress)
+            with col2:
+                st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            if st.session_state.total_points >= MAX_TOTAL_POINTS:
+                st.warning("⚠️ You've reached the maximum 90 points. To add points to other skills, you'll need to reduce points elsewhere first. There might be a slight delay when updating points due to processing.")
 
-    
-    # Visual progress indicator
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
-        st.progress(progress)
-    with col2:
-        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
+    st.markdown("### Important Notes")
+    st.markdown("""
+    - The points tracker will stay visible at the top as you scroll
+    - When you reach 90 points total, the system will prevent adding more points
+    - There may be a slight delay when updating points due to processing
+    - To add points after reaching 90, you must first reduce points in other skills
+    """)
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
-    
-    if st.session_state.total_points >= MAX_TOTAL_POINTS:
-        st.warning("You have used all 90 points. To add points to other skills, first reduce points elsewhere.")
     
     st.markdown("---")
     
@@ -407,6 +436,7 @@ def show_skills_form(submitter_email, submitter_name):
                 st.experimental_rerun()  # This will be the last refresh to show success message
             else:
                 st.error("There was an error saving your response. Please try again.")
+
 def main():
     # Sidebar for navigation
     with st.sidebar:
@@ -446,216 +476,193 @@ def main():
     Primary Areas of Expertise: You should allocate higher points (e.g., 8-10) to the skills where you have deep expertise or significant experience.
     Secondary Areas of Expertise: For skills where you have some experience or intermediate-level knowledge, allocate moderate points (e.g., 3-7).
     Limited Experience: For skills where you have limited experience or basic understanding, allocate fewer points (e.g., 1-2), or none at all.
-    
-    ### How to Complete the Matrix
-    
-    **1. Review the Skills**
-    Carefully read through the skills listed in the matrix. Each skill represents a specific area of expertise relevant to our team's work.
-    
-    **2. Allocate Your Points**
-    Distribute your 90 points across the skills based on your expertise. Remember, the objective is to highlight your primary 
-    strengths while providing an honest reflection of your experience in other areas. 
-    
-    **You can enter in a number between 1 and 10 or you could use the arrows to increase or decrease the number.**
-    
-    **3. Consider Balance**
-    While you are free to allocate up to 10 points for a single skill, keep in mind that spreading your points too thinly may 
-    not fully represent your primary areas of expertise. Prioritize the skills where you are most confident and experienced.
-    
-    **4. Total Points**
-    Ensure that the total number of points you allocate across all skills does not exceed **90 points**.
-    
-    ### Example Point Distribution
-    - **Distribution and Supply Agreements:** 🔵 8 points (Primary area of expertise—highly experienced)
-    - **Employment Agreements:** 🟢 4 points (Moderate experience)
-    - **Technology Transfer Agreements:** 🟡 2 points (Limited experience)
     """)
     
     # Email input before showing the form
     submitter_name = st.text_input("Enter your full name:")
     submitter_email = st.text_input("Enter your email:")
     
-     # Initialize session state after valid inputs
-    if submitter_email and submitter_name:  # Check for both name and email
-        if not is_email_unique(submitter_email):
-            st.error("This email has already submitted a response. Please use a different email address.")
-            return
-        
-        if 'total_points' not in st.session_state:
-            st.session_state.total_points = 0
-        if 'skills' not in st.session_state:
-            st.session_state.skills = {
-                'Advertising and Labeling Regulations (Pharma/BioTech) (Skill 1)': 0,
-                'Advertising and Marketing Regulations (Retail and Consumer) (Skill 2)': 0,
-                'Advertising Technology (AdTech) (Skill 3)': 0,
-                'Affiliate Marketing Agreements (Skill 4)': 0,
-                'Amalgamations (Skill 5)': 0,
-                'Aquisitions (Skill 8)': 0,
-                'Artificial Intelligence Terms, Regulations & Compliance (Skill 6)': 0,
-                'Associations (Skill 7)': 0,   
-                'Banking and Finance Transactions (Skill 9)': 0,
-                'Banking Regulation and Compliance (Skill 10)': 0,
-                'Bankrupcty and Insolvency (Debtor/Creditor) (Skill 11)': 0,
-                'Biotech Agreements (Skill 12)': 0,
-                'Blockchain Governance (Skill 13)': 0,
-                'Board of Directors and Committees (Skill 14)': 0,
-                'Canadian Anti-Spam Legislation (CASL) (Skill 15)': 0,
-                'Children\'s Privacy (Skill 16)': 0,
-                'Clinical Trials and Research (Skill 17)': 0,
-                'Collections (Skill 27)': 0,
-                'Commercial Contracts (Skill 20)': 0,
-                'Commercial Real Estate Transactions (Skill 19)': 0,
-                'Competition (Skill 18)': 0,
-                'Construction (Skill 23)': 0,
-                'Consumer Banking Regulations (Skill 21)': 0,
-                'Consumer Protection (B2C) (Skill 22)': 0,
-                'Content Creation and Copyright (Skill 24)': 0,
-                'Content Removal and Takedown (Skill 25)': 0,
-                'Continuous Disclosure (Skill 26)': 0,  
-                'Copyright and Fair Dealing (Skill 28)': 0,
-                'Corporate Bylaws, Records and Governance (Skill 29)': 0,
-                'Corporate Reorganization (Skill 30)': 0,
-                'Corruption and Anti-Bribery (Skill 31)': 0,
-                'Cross-Border Privacy Compliance (Skill 32)': 0,
-                'Cross-Border Transactions (Skill 33)': 0,
-                'Cryptocurrency Exchange (Digital Assets & Blockchain) (Skill 34)': 0,
-                'Customs Regulations (Skill 35)': 0,
-                'Cybersecurity and Data Protection (Regulatory Compliance) (Skill 36)': 0,
-                'Cybersecurity/Data Breach Incident Response (Skill 37)': 0,
-                'Data Collection, Sales and Compliance (Data Brokers) (Skill 38)': 0,
-                'Debt & Equity Financing (Skill 39)': 0,
-                'Deferred Compensation Plans (Skill 40)': 0,
-                'Demand Response Agreements (Skill 41)': 0,
-                'Derivatives and Commodities (Skill 42)': 0,
-                'Digital Advertising Regulation (Skill 43)': 0,
-                'Digital Media and Online Content (Skill 44)': 0,
-                'Digital Payment Regulations (Skill 45)': 0,
-                'Dissolutions (Skill 70)': 0,
-                'Distribution and Supply Agreements (Skill 46)': 0,
-                'Drones (Skill 71)': 0,
-                'Drug, Alcohol, Gaming Regulatory (Skill 47)': 0,
-                'Due Diligence and Valuation (Skill 48)': 0,
-                'eCommerce (Skill 49)': 0,
-                'Employee Benefits Plans (Skill 50)': 0,
-                'Employee side Employment Issues (Skill 51)': 0,
-                'Employee Stock Purchase Plans (Skill 52)': 0,
-                'Employee Training Programs (Skill 53)': 0,
-                'Employer Side Employment Issues (Skill 54)': 0,
-                'Employment Agreements (Skill 55)': 0,
-                'Employment; Notice, Severance and Termination (Skill 56)': 0,
-                'Employment; Workplace Discrimination and Human Rights (Skill 57)': 0,
-                'Employment-based Immigration (Skill 58)': 0,
-                'Energy Contracts and Agreements (Skill 59)': 0,
-                'Energy - Hydro (Skill 62)': 0,
-                'Energy - Nuclear (Skill 63)': 0,
-                'Energy - Solar (Skill 60)': 0,
-                'Energy - Wind (Skill 61)': 0,
-                'Entertainment and Sponsorship Agreements (Skill 64)': 0,
-                'Environmental Sustainability Compliance (Skill 65)': 0,
-                'Equity Compensation or Incentive Plans (Skill 66)': 0,
-                'Escrow Agreements (Skill 67)': 0,
-                'Executive Compensation (Skill 68)': 0,
-                'Export Control Regulations (Skill 69)': 0,
-                'Federal and Provincial Government Contracting (Prime and Subs) (Skill 72)': 0,
-                'Financial Services Regulatory Requirements (Skill 73)': 0,
-                'Financial Transactions and Structuring (Skill 74)': 0,
-                'Fintech (Skill 75)': 0,
-                'Fintrac (Skill 76)': 0,
-                'Forced Labour and Slavery (Skill 77)': 0,
-                'Formation and Entity Creation/Operating Agreements (Skill 78)': 0,
-                'Founder Agreements (Skill 79)': 0,
-                'Franchise Law - Franchisee (Skill 81)': 0,
-                'Franchise Law - Franchisor (Skill 80)': 0,
-                'Global/Cross-Border Employment Issues (Skill 82)': 0,
-                'Health Canada Compliance, Regulations and Enforcement (Skill 83)': 0,
-                'Healthcare Compliance and Regulations (Skill 84)': 0,
-                'Higher Education Regulations (Skill 85)': 0,
-                'Immigration - Business (Skill 86)': 0,
-                'Immigration - Personal/Family (Skill 87)': 0,
-                'Incorporations (Federal) (Skill 88)': 0,
-                'Incorporations (Professional) (Skill 89)': 0,
-                'Incorporations (Provincial) (Skill 90)': 0,
-                'Independent Contractor Agreements (Skill 91)': 0,
-                'Independent Schools (Skill 92)': 0,
-                'Indigenous Rights and Relations (Skill 93)': 0,
-                'Influencer Agreements (Skill 94)': 0,
-                'Initial Public Offering (IPO) (Skill 103)': 0,
-                'Insurance Coverage Review (Skill 95)': 0,
-                'Intellectual Property in M&A (Skill 96)': 0,
-                'Intellectual Property Infringement (Skill 97)': 0,
-                'Intellectual Property Licensing (Skill 98)': 0,
-                'Intellectual Property Protection (Skill 99)': 0,
-                'International Data Transfers (Skill 100)': 0,
-                'International Trade and Import Export (Skill 101)': 0,
-                'International/Foreign Government Contracts (Skill 102)': 0,
-                'Investment and Funding (Skill 104)': 0,
-                'Investment Law and Regulations (Skill 105)': 0,
-                'Investor Relations and Reporting (Skill 106)': 0,
-                'Joint Ventures and Strategic Alliances (Skill 107)': 0,
-                'Labour and Union (Skill 108)': 0,
-                'Land Use and Zoning (Skill 109)': 0,
-                'Leasing (Commercial Property) (Skill 111)': 0,
-                'Leasing (Equipment) (Skill 110)': 0,
-                'Lending (secured or unsecured) (Skill 112)': 0,
-                'Life Sciences Licensing and Tech Transfer Agreements (Skill 113)': 0,
-                'Litigation (Civil) (Skill 114)': 0,
-                'Litigation (Employment) (Skill 115)': 0,
-                'Litigation (Small Claims) (Skill 116)': 0,
-                'Litigation Management (Skill 117)': 0,
-                'Lobbying and PACs (Skill 118)': 0,
-                'Loyalty Card Programs (Skill 119)': 0,
-                'M&A (Skill 120)': 0,
-                'Master Services Agreements (Skill 121)': 0,
-                'Media Production Contracts (Skill 122)': 0,
-                'Mediation (Skill 123)': 0,
-                'Medical Device Licensing and Distribution (Skill 124)': 0,
-                'Medical Device Regulations (Skill 125)': 0,
-                'Mining (Skill 126)': 0,
-                'Money Laundering and AML Regulations (Skill 127)': 0,
-                'Municipality (Skill 128)': 0,
-                'Natural Resource Management (Skill 129)': 0,
-                'Non-Competition and Solicitation Agreements (Skill 130)': 0,
-                'Non-Disclosure Agreements (Skill 131)': 0,
-                'Non-Profit Law (Skill 132)': 0,
-                'Occupational Health and Safety (Skill 133)': 0,
-                'Oil and Gas Regulation (Skill 134)': 0,
-                'Open Source Agreements (Skill 135)': 0,
-                'Patent Portfolio Management (Skill 137)': 0,
-                'Patent Prosecution (Skill 139)': 0,
-                'Payment Systems and Digital Payments (Skill 140)': 0,
-                'Pension Fund Management (Skill 141)': 0,
-                'Pharmaceutical Licensing (Skill 142)': 0,
-                'Policy Creation (Skill 143)': 0,
-                'Power Purchase Agreements (Skill 144)': 0,
-                'Privacy Compliance (Skill 145)': 0,
-                'Private Company Corporate Governance (Skill 146)': 0,
-                'Private Equity and Venture Capital (Skill 147)': 0,
-                'Private Public Partnerships (P3) (Skill 136)': 0,
-                'Procurement (private) & RFPs (Skill 148)': 0,
-                'Procurement (public) & RFPs (Skill 149)': 0,
-                'Product Labeling and Packaging (Skill 150)': 0,
-                'Product Warranties/Agreement Warranties (Skill 151)': 0,
-                'Professional Services Agreements and related SOWs (Skill 152)': 0,
-                'Prospectus (Skill 138)': 0,
-                'Public Company Corporate Governance (Skill 153)': 0,
-                'Purchase and Sale Agreements (Skill 154)': 0,
-                'Reorganizations (Skill 155)': 0,
-                'Sanctions Law & Compliance (Skill 156)': 0,
-                'Securities and Capital Markets (Skill 157)': 0,
-                'Shareholder and Partnership Agreements (Skill 158)': 0,
-                'Sports Law Agreements (Skill 159)': 0,
-                'State/Local SLED Government Contracting (Skill 160)': 0,
-                'Structured Finance and Securitization (Skill 161)': 0,
-                'Sweepstakes and Contests (Skill 162)': 0,
-                'Technology Licensing—Hardware (Skill 163)': 0,
-                'Technology Licensing—Software/SaaS (Skill 164)': 0,
-                'Terms of Service and User Agreements (Skill 165)': 0,
-                'Trademark and Brand Protection/Prosecution (Skill 166)': 0,
-                'Trademark Law/Portfolio Management (Skill 167)': 0,
-                'Waste Management and Recycling (Skill 168)': 0
-            }
-        
-        show_skills_form(submitter_email,submitter_name)
+    # Initialize session state after valid inputs
+if submitter_email and submitter_name:  # Check for both name and email
+    if not is_email_unique(submitter_email):
+        st.error("This email has already submitted a response. Please use a different email address.")
+        return
+    
+    if 'total_points' not in st.session_state:
+        st.session_state.total_points = 0
+    if 'skills' not in st.session_state:
+        st.session_state.skills = {
+            'Advertising and Labeling Regulations (Pharma/BioTech) (Skill 1)': 0,
+            'Advertising and Marketing Regulations (Retail and Consumer) (Skill 2)': 0,
+            'Advertising Technology (AdTech) (Skill 3)': 0,
+            'Affiliate Marketing Agreements (Skill 4)': 0,
+            'Amalgamations (Skill 5)': 0,
+            'Aquisitions (Skill 8)': 0,
+            'Artificial Intelligence Terms, Regulations & Compliance (Skill 6)': 0,
+            'Associations (Skill 7)': 0,   
+            'Banking and Finance Transactions (Skill 9)': 0,
+            'Banking Regulation and Compliance (Skill 10)': 0,
+            'Bankrupcty and Insolvency (Debtor/Creditor) (Skill 11)': 0,
+            'Biotech Agreements (Skill 12)': 0,
+            'Blockchain Governance (Skill 13)': 0,
+            'Board of Directors and Committees (Skill 14)': 0,
+            'Canadian Anti-Spam Legislation (CASL) (Skill 15)': 0,
+            'Children\'s Privacy (Skill 16)': 0,
+            'Clinical Trials and Research (Skill 17)': 0,
+            'Collections (Skill 27)': 0,
+            'Commercial Contracts (Skill 20)': 0,
+            'Commercial Real Estate Transactions (Skill 19)': 0,
+            'Competition (Skill 18)': 0,
+            'Construction (Skill 23)': 0,
+            'Consumer Banking Regulations (Skill 21)': 0,
+            'Consumer Protection (B2C) (Skill 22)': 0,
+            'Content Creation and Copyright (Skill 24)': 0,
+            'Content Removal and Takedown (Skill 25)': 0,
+            'Continuous Disclosure (Skill 26)': 0,  
+            'Copyright and Fair Dealing (Skill 28)': 0,
+            'Corporate Bylaws, Records and Governance (Skill 29)': 0,
+            'Corporate Reorganization (Skill 30)': 0,
+            'Corruption and Anti-Bribery (Skill 31)': 0,
+            'Cross-Border Privacy Compliance (Skill 32)': 0,
+            'Cross-Border Transactions (Skill 33)': 0,
+            'Cryptocurrency Exchange (Digital Assets & Blockchain) (Skill 34)': 0,
+            'Customs Regulations (Skill 35)': 0,
+            'Cybersecurity and Data Protection (Regulatory Compliance) (Skill 36)': 0,
+            'Cybersecurity/Data Breach Incident Response (Skill 37)': 0,
+            'Data Collection, Sales and Compliance (Data Brokers) (Skill 38)': 0,
+            'Debt & Equity Financing (Skill 39)': 0,
+            'Deferred Compensation Plans (Skill 40)': 0,
+            'Demand Response Agreements (Skill 41)': 0,
+            'Derivatives and Commodities (Skill 42)': 0,
+            'Digital Advertising Regulation (Skill 43)': 0,
+            'Digital Media and Online Content (Skill 44)': 0,
+            'Digital Payment Regulations (Skill 45)': 0,
+            'Dissolutions (Skill 70)': 0,
+            'Distribution and Supply Agreements (Skill 46)': 0,
+            'Drones (Skill 71)': 0,
+            'Drug, Alcohol, Gaming Regulatory (Skill 47)': 0,
+            'Due Diligence and Valuation (Skill 48)': 0,
+            'eCommerce (Skill 49)': 0,
+            'Employee Benefits Plans (Skill 50)': 0,
+            'Employee side Employment Issues (Skill 51)': 0,
+            'Employee Stock Purchase Plans (Skill 52)': 0,
+            'Employee Training Programs (Skill 53)': 0,
+            'Employer Side Employment Issues (Skill 54)': 0,
+            'Employment Agreements (Skill 55)': 0,
+            'Employment; Notice, Severance and Termination (Skill 56)': 0,
+            'Employment; Workplace Discrimination and Human Rights (Skill 57)': 0,
+            'Employment-based Immigration (Skill 58)': 0,
+            'Energy Contracts and Agreements (Skill 59)': 0,
+            'Energy - Hydro (Skill 62)': 0,
+            'Energy - Nuclear (Skill 63)': 0,
+            'Energy - Solar (Skill 60)': 0,
+            'Energy - Wind (Skill 61)': 0,
+            'Entertainment and Sponsorship Agreements (Skill 64)': 0,
+            'Environmental Sustainability Compliance (Skill 65)': 0,
+            'Equity Compensation or Incentive Plans (Skill 66)': 0,
+            'Escrow Agreements (Skill 67)': 0,
+            'Executive Compensation (Skill 68)': 0,
+            'Export Control Regulations (Skill 69)': 0,
+            'Federal and Provincial Government Contracting (Prime and Subs) (Skill 72)': 0,
+            'Financial Services Regulatory Requirements (Skill 73)': 0,
+            'Financial Transactions and Structuring (Skill 74)': 0,
+            'Fintech (Skill 75)': 0,
+            'Fintrac (Skill 76)': 0,
+            'Forced Labour and Slavery (Skill 77)': 0,
+            'Formation and Entity Creation/Operating Agreements (Skill 78)': 0,
+            'Founder Agreements (Skill 79)': 0,
+            'Franchise Law - Franchisee (Skill 81)': 0,
+            'Franchise Law - Franchisor (Skill 80)': 0,
+            'Global/Cross-Border Employment Issues (Skill 82)': 0,
+            'Health Canada Compliance, Regulations and Enforcement (Skill 83)': 0,
+            'Healthcare Compliance and Regulations (Skill 84)': 0,
+            'Higher Education Regulations (Skill 85)': 0,
+            'Immigration - Business (Skill 86)': 0,
+            'Immigration - Personal/Family (Skill 87)': 0,
+            'Incorporations (Federal) (Skill 88)': 0,
+            'Incorporations (Professional) (Skill 89)': 0,
+            'Incorporations (Provincial) (Skill 90)': 0,
+            'Independent Contractor Agreements (Skill 91)': 0,
+            'Independent Schools (Skill 92)': 0,
+            'Indigenous Rights and Relations (Skill 93)': 0,
+            'Influencer Agreements (Skill 94)': 0,
+            'Initial Public Offering (IPO) (Skill 103)': 0,
+            'Insurance Coverage Review (Skill 95)': 0,
+            'Intellectual Property in M&A (Skill 96)': 0,
+            'Intellectual Property Infringement (Skill 97)': 0,
+            'Intellectual Property Licensing (Skill 98)': 0,
+            'Intellectual Property Protection (Skill 99)': 0,
+            'International Data Transfers (Skill 100)': 0,
+            'International Trade and Import Export (Skill 101)': 0,
+            'International/Foreign Government Contracts (Skill 102)': 0,
+            'Investment and Funding (Skill 104)': 0,
+            'Investment Law and Regulations (Skill 105)': 0,
+            'Investor Relations and Reporting (Skill 106)': 0,
+            'Joint Ventures and Strategic Alliances (Skill 107)': 0,
+            'Labour and Union (Skill 108)': 0,
+            'Land Use and Zoning (Skill 109)': 0,
+            'Leasing (Commercial Property) (Skill 111)': 0,
+            'Leasing (Equipment) (Skill 110)': 0,
+            'Lending (secured or unsecured) (Skill 112)': 0,
+            'Life Sciences Licensing and Tech Transfer Agreements (Skill 113)': 0,
+            'Litigation (Civil) (Skill 114)': 0,
+            'Litigation (Employment) (Skill 115)': 0,
+            'Litigation (Small Claims) (Skill 116)': 0,
+            'Litigation Management (Skill 117)': 0,
+            'Lobbying and PACs (Skill 118)': 0,
+            'Loyalty Card Programs (Skill 119)': 0,
+            'M&A (Skill 120)': 0,
+            'Master Services Agreements (Skill 121)': 0,
+            'Media Production Contracts (Skill 122)': 0,
+            'Mediation (Skill 123)': 0,
+            'Medical Device Licensing and Distribution (Skill 124)': 0,
+            'Medical Device Regulations (Skill 125)': 0,
+            'Mining (Skill 126)': 0,
+            'Money Laundering and AML Regulations (Skill 127)': 0,
+            'Municipality (Skill 128)': 0,
+            'Natural Resource Management (Skill 129)': 0,
+            'Non-Competition and Solicitation Agreements (Skill 130)': 0,
+            'Non-Disclosure Agreements (Skill 131)': 0,
+            'Non-Profit Law (Skill 132)': 0,
+            'Occupational Health and Safety (Skill 133)': 0,
+            'Oil and Gas Regulation (Skill 134)': 0,
+            'Open Source Agreements (Skill 135)': 0,
+            'Patent Portfolio Management (Skill 137)': 0,
+            'Patent Prosecution (Skill 139)': 0,
+            'Payment Systems and Digital Payments (Skill 140)': 0,
+            'Pension Fund Management (Skill 141)': 0,
+            'Pharmaceutical Licensing (Skill 142)': 0,
+            'Policy Creation (Skill 143)': 0,
+            'Power Purchase Agreements (Skill 144)': 0,
+            'Privacy Compliance (Skill 145)': 0,
+            'Private Company Corporate Governance (Skill 146)': 0,
+            'Private Equity and Venture Capital (Skill 147)': 0,
+            'Private Public Partnerships (P3) (Skill 136)': 0,
+            'Procurement (private) & RFPs (Skill 148)': 0,
+            'Procurement (public) & RFPs (Skill 149)': 0,
+            'Product Labeling and Packaging (Skill 150)': 0,
+            'Product Warranties/Agreement Warranties (Skill 151)': 0,
+            'Professional Services Agreements and related SOWs (Skill 152)': 0,
+            'Prospectus (Skill 138)': 0,
+            'Public Company Corporate Governance (Skill 153)': 0,
+            'Purchase and Sale Agreements (Skill 154)': 0,
+            'Reorganizations (Skill 155)': 0,
+            'Sanctions Law & Compliance (Skill 156)': 0,
+            'Securities and Capital Markets (Skill 157)': 0,
+            'Shareholder and Partnership Agreements (Skill 158)': 0,
+            'Sports Law Agreements (Skill 159)': 0,
+            'State/Local SLED Government Contracting (Skill 160)': 0,
+            'Structured Finance and Securitization (Skill 161)': 0,
+            'Sweepstakes and Contests (Skill 162)': 0,
+            'Technology Licensing—Hardware (Skill 163)': 0,
+            'Technology Licensing—Software/SaaS (Skill 164)': 0,
+            'Terms of Service and User Agreements (Skill 165)': 0,
+            'Trademark and Brand Protection/Prosecution (Skill 166)': 0,
+            'Trademark Law/Portfolio Management (Skill 167)': 0,
+            'Waste Management and Recycling (Skill 168)': 0
+        }
+    
+    show_skills_form(submitter_email, submitter_name)
 
 if __name__ == "__main__":
     main()
