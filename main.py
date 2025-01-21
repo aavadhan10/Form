@@ -364,6 +364,7 @@ def show_skills_form(submitter_email, submitter_name):
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                     width: 90%;
                     max-width: 500px;
+                    text-align: center;
                 }
                 .modal-title {
                     color: #FF4B4B;
@@ -373,6 +374,7 @@ def show_skills_form(submitter_email, submitter_name):
                 .modal-text {
                     font-size: 1rem;
                     margin-bottom: 1.5rem;
+                    text-align: left;
                 }
             </style>
             <div class="modal-overlay">
@@ -388,11 +390,10 @@ def show_skills_form(submitter_email, submitter_name):
         """
         st.markdown(modal_content, unsafe_allow_html=True)
         
-        # Create a container for the button
-        button_container = st.container()
+        # Center the button with columns
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:
-            if st.button("OK, I'll adjust my values", key="modal_close"):
+            if st.button("OK, I'll adjust my values", type="primary"):  # Made button primary color
                 st.session_state.show_90_points_modal = False
                 st.rerun()
 
