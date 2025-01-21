@@ -399,142 +399,25 @@ def show_skills_form(submitter_email, submitter_name):
             else:
                 st.error("There was an error saving your response. Please try again.")
 def main():
-    # Initialize session state variables
-    if 'total_points' not in st.session_state:
-        st.session_state.total_points = 0
-    if 'previous_total' not in st.session_state:
-        st.session_state.previous_total = 0
-    if 'show_warning' not in st.session_state:
-        st.session_state.show_warning = False
-
-    # Display modal warning if triggered
-    if st.session_state.get('show_warning', False):
-        #def main():
-    # Initialize session state variables
-    if 'total_points' not in st.session_state:
-        st.session_state.total_points = 0
-    if 'previous_total' not in st.session_state:
-        st.session_state.previous_total = 0
-    if 'show_warning' not in st.session_state:
-        st.session_state.show_warning = False
-
-    # Create placeholder for warning modal at the top of the page
-    warning_placeholder = st.empty()
-
-    # Display modal warning if triggered
-    if st.session_state.get('show_warning', False):
-        with warning_placeholder.container():
-            # Add custom CSS for the modal
-        st.markdown("""
-            <style>
-                div[data-testid="StyledFullScreenFrame"] {
-                    position: relative;
-                }
-                .warning-modal-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    background-color: rgba(0, 0, 0, 0.5);
-                    z-index: 999999;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-                .warning-modal-content {
-                    background: white;
-                    padding: 2rem;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-                    max-width: 500px;
-                    width: 90%;
-                    text-align: center;
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 1000000;
-                }
-                .warning-title {
-                    color: #ff4b4b;
-                    font-size: 1.5rem;
-                    margin-bottom: 1rem;
-                    font-weight: bold;
-                }
-                .warning-text {
-                    font-size: 1rem;
-                    margin-bottom: 1.5rem;
-                    line-height: 1.5;
-                }
-            </style>
-            
-            <div class="warning-modal-overlay">
-                <div class="warning-modal-content">
-                    <div class="warning-title">⚠️ Maximum Points Reached!</div>
-                    <div class="warning-text">
-                        You have reached the maximum of 90 points.<br><br>
-                        To add points to other skills, you will need to first reduce points from existing skills.
-                    </div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Center the button
-        col1, col2, col3 = st.columns([2,1,2])
-        with col2:
-            if st.button("OK, Got it!", use_container_width=True):
-                st.session_state['show_warning'] = False
-                st.experimental_rerun()
-    if st.session_state.show_warning:
-        # Create a centered modal using columns
-        _, modal_col, _ = st.columns([1, 2, 1])
-        
-        with modal_col:
-            # Style the modal to look like a popup
-            st.markdown("""
-                <style>
-                    div[data-testid="stExpander"] {
-                        background-color: white;
-                        border-radius: 10px;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                        padding: 1rem;
-                        margin: 2rem 0;
-                        text-align: center;
-                    }
-                </style>
-            """, unsafe_allow_html=True)
-            
-            with st.container():
-                st.markdown("<h2 style='text-align: center; color: #FF4B4B;'>⚠️ Maximum Points Reached!</h2>", unsafe_allow_html=True)
-                st.markdown("<p style='text-align: center;'>You have reached the maximum of 90 points.</p>", unsafe_allow_html=True)
-                st.markdown("<p style='text-align: center;'>To add points to other skills, you will need to first reduce points from existing skills.</p>", unsafe_allow_html=True)
-                
-                if st.button("OK, Got it!", key="modal_close"):
-                    st.session_state.show_warning = False
-                    st.experimental_rerun()
-
-    # Update previous_total for next check
-    st.session_state.previous_total = st.session_state.total_points
-
     # Sidebar for navigation and points tracking
     with st.sidebar:
         st.title("Navigation")
         page = st.radio("Go to", ["Caravel Skills Matrix", "Admin"])
         
-        # Always show points tracker in sidebar
-        st.markdown("---")
-        st.markdown("### Points Tracker")
-        progress = min(st.session_state.total_points / 90, 1.0)
-        st.progress(progress)
-        st.metric("Total Points Used", st.session_state.total_points, f"/90 available")
-        
-        # Add color-coded expertise level legend
-        st.markdown("---")
-        st.markdown("### Expertise Levels")
-        st.markdown("🔵 Primary (8-10 points)")
-        st.markdown("🟢 Secondary (3-7 points)")
-        st.markdown("🟡 Limited (1-2 points)")
+        # Add points tracker in sidebar if on main form page and session state is initialized
+        if page == "Caravel Skills Matrix" and 'total_points' in st.session_state:
+            st.markdown("---")
+            st.markdown("### Points Tracker")
+            progress = min(st.session_state.total_points / 90, 1.0)  # Using MAX_TOTAL_POINTS value directly
+            st.progress(progress)
+            st.metric("Total Points Used", st.session_state.total_points, f"/90 available")
+            
+            # Add color-coded expertise level legend
+            st.markdown("---")
+            st.markdown("### Expertise Levels")
+            st.markdown("🔵 Primary (8-10 points)")
+            st.markdown("🟢 Secondary (3-7 points)")
+            st.markdown("🟡 Limited (1-2 points)")
     
     if page == "Admin":
         if not check_password():
