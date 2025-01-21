@@ -487,8 +487,7 @@ def main():
             st.error("This email has already submitted a response. Please use a different email address.")
             return
         
-            st.session_state.total_points = st.session_state.get('total_points', 0)
-            st.session_state.total_points = 0
+        st.session_state.total_points = st.session_state.get('total_points', 0)
         if 'skills' not in st.session_state:
             st.session_state.skills = {
                 'Advertising and Labeling Regulations (Pharma/BioTech) (Skill 1)': 0,
