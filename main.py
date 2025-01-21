@@ -476,7 +476,7 @@ if submitter_email and submitter_name:  # Check for both name and email
     if not is_email_unique(submitter_email):
         st.error("This email has already submitted a response. Please use a different email address.")
         return
-    
+
     if 'total_points' not in st.session_state:
         st.session_state.total_points = 0
     if 'skills' not in st.session_state:
