@@ -342,7 +342,7 @@ def show_skills_form(submitter_email, submitter_name):
     # Show the 90 points modal if needed
     if st.session_state.get('show_90_points_modal', False):
         # Add CSS for modal overlay and positioning
-        # Create modal container with styling
+        # Create modal container with styling that includes the button
         modal_content = """
             <style>
                 .modal-overlay {
@@ -377,9 +377,18 @@ def show_skills_form(submitter_email, submitter_name):
                     margin-bottom: 1.5rem;
                     text-align: left;
                 }
-                .streamlit-button {
-                    z-index: 1002;
-                    position: relative;
+                .modal-button {
+                    background-color: rgb(255, 75, 75);
+                    color: white;
+                    padding: 0.5rem 1rem;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 1rem;
+                    margin-top: 1rem;
+                }
+                .modal-button:hover {
+                    background-color: rgb(255, 45, 45);
                 }
             </style>
             <div class="modal-overlay">
@@ -390,21 +399,21 @@ def show_skills_form(submitter_email, submitter_name):
                         you'll need to reduce points from your current allocations.<br><br>
                         Review your selections and adjust as needed to best reflect your expertise across different skills.
                     </div>
-                    <div class="streamlit-button">
-        """
-        st.markdown(modal_content, unsafe_allow_html=True)
-        
-        # Put button directly after modal content
-        if st.button("OK, I'll adjust my values", type="primary", key="modal_close"):
-            st.session_state.show_90_points_modal = False
-            st.rerun()
-            
-        # Close the modal HTML structure
-        st.markdown("""
-                    </div>
+                    <button class="modal-button" onclick="
+                        window.streamlitCommandBus && window.streamlitCommandBus.setComponentValue('modal_close', true)
+                    ">OK, I'll adjust my values</button>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
+        """
+        
+        # Add modal to the page
+        st.markdown(modal_content, unsafe_allow_html=True)
+        
+        # Handle button click
+        if st.session_state.get('modal_close'):
+            st.session_state.show_90_points_modal = False
+            st.session_state.modal_close = False
+            st.rerun()
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
