@@ -458,23 +458,23 @@ def main():
     
     ### How to Complete the Matrix
     
-    **1. Review the Skills**
+    **1. Review the Skills**:
     Carefully read through the skills listed in the matrix. Each skill represents a specific area of expertise relevant to our team's work.
     
-    **2. Allocate Your Points**
+    **2. Allocate Your Points**:
     Distribute your 90 points across the skills based on your expertise. Remember, the objective is to highlight your primary 
     strengths while providing an honest reflection of your experience in other areas. 
     
     **You can enter in a number between 1 and 10 or you could use the arrows to increase or decrease the number.**
     
-    **3. Consider Balance**
+    **3. Consider Balance**:
     While you are free to allocate up to 10 points for a single skill, keep in mind that spreading your points too thinly may 
     not fully represent your primary areas of expertise. Prioritize the skills where you are most confident and experienced.
     
-    **4. Total Points**
+    **4. Total Points**:
     Ensure that the total number of points you allocate across all skills does not exceed **90 points**.
 
-    **5. Reaching 90 Points**
+    **5. Reaching 90 Points**:
     The system will not allow you to enter more values after you've reached 90 points. Once 90 points have been reached, adjust other entry values accordingly, utilizing the point tracker on the left to keep track of updated points.
     
     ### Example Point Distribution
