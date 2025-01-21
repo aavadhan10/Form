@@ -293,7 +293,6 @@ def update_total_points():
         st.session_state.show_90_points_modal = True
     
     st.session_state.total_points = new_total
-
 def get_expertise_level(value):
     """Return expertise level emoji based on value"""
     if value >= 8:
@@ -413,8 +412,9 @@ def main():
         
     # Show modal when 90 points is reached
     if st.session_state.show_90_points_modal:
-        with st.dialog("Maximum Points Reached!", on_close=lambda: setattr(st.session_state, 'show_90_points_modal', False)):
-            st.markdown("### You've reached 90 points! 🎉")
+        modal = st.container()
+        with modal:
+            st.markdown("### Maximum Points Reached! 🎉")
             st.markdown("""
                 You have now allocated all available points. To add points to other skills,
                 you'll need to reduce points from your current allocations.
