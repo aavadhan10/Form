@@ -1,4 +1,6 @@
 import os
+print("File exists:", os.path.exists(RESPONSES_FILE))
+print("File is readable:", os.access(RESPONSES_FILE, os.R_OK))
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -7,11 +9,26 @@ import streamlit.components.v1 as components
 import threading
 file_lock = threading.Lock()
 
+# Add this at the top of your script or in the load_responses function
+print("Current working directory:", os.getcwd())
+print("Full path to responses file:", os.path.abspath(RESPONSES_FILE))
+
 # Add this at the very top of your script
 st.set_page_config(page_title="Skills Matrix", layout="wide")
 
 # Constants
 RESPONSES_FILE = "skills_matrix_responses.csv"
+
+def debug_csv_file():
+    try:
+        with open(RESPONSES_FILE, 'r') as f:
+            print("First few lines of the CSV:")
+            for _ in range(5):
+                print(f.readline().strip())
+    except Exception as e:
+        print(f"Error reading file: {e}")
+
+debug_csv_file()
 
 def load_responses():
     """Load responses from CSV file with thread-safe file handling"""
