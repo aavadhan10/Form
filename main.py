@@ -272,7 +272,7 @@ def show_admin_page():
         st.info("No responses collected yet.")
 
 def update_total_points():
-    """Update the total points in session state"""
+    """Update the total points in session state and show modal when hitting 90 points"""
     total = 0
     for skill in st.session_state.skills.keys():
         input_key = f"input_{skill}"
@@ -285,8 +285,14 @@ def update_total_points():
                     total += value
             except (ValueError, TypeError):
                 continue
-    st.session_state.total_points = round(total, 1)  # Round to 1 decimal place for consistency
-
+    
+    new_total = round(total, 1)  # Round to 1 decimal place for consistency
+    
+    # Check if we just hit 90 points and haven't shown the modal yet
+    if new_total >= 90 and st.session_state.total_points < 90:
+        st.session_state.show_90_points_modal = True
+    
+    st.session_state.total_points = new_total
 
 def get_expertise_level(value):
     """Return expertise level emoji based on value"""
@@ -399,10 +405,25 @@ def show_skills_form(submitter_email, submitter_name):
             else:
                 st.error("There was an error saving your response. Please try again.")
 def main():
-    # Initialize total_points in session state if it doesn't exist
+    # Initialize session state variables
     if 'total_points' not in st.session_state:
         st.session_state.total_points = 0
-
+    if 'show_90_points_modal' not in st.session_state:
+        st.session_state.show_90_points_modal = False
+        
+    # Show modal when 90 points is reached
+    if st.session_state.show_90_points_modal:
+        with st.dialog("Maximum Points Reached!", on_close=lambda: setattr(st.session_state, 'show_90_points_modal', False)):
+            st.markdown("### You've reached 90 points! 🎉")
+            st.markdown("""
+                You have now allocated all available points. To add points to other skills,
+                you'll need to reduce points from your current allocations.
+                
+                Review your selections and adjust as needed to best reflect your expertise across different skills.
+            """)
+            if st.button("OK, I'll adjust my values", key="modal_close"):
+                st.session_state.show_90_points_modal = False
+                st.rerun()
     # Sidebar for navigation and points tracking
     with st.sidebar:
         st.title("Navigation")
