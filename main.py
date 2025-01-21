@@ -142,7 +142,7 @@ def show_admin_page():
                     st.experimental_rerun()
         
         # Tabs for different analysis views
-        tab1, tab2, tab3, tab4 = st.tabs(["Raw Data", "Skills Analysis", "Form Submission Trends", "Response Management"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Raw Data", "Skills Analysis", "Form Submission Trends"])
         
         # Tab 1: Raw Data
         with tab1:
