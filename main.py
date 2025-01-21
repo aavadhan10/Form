@@ -405,7 +405,7 @@ def main():
         page = st.radio("Go to", ["Caravel Skills Matrix", "Admin"])
         
         # Add points tracker in sidebar if on main form page and session state is initialized
-        if page == "Caravel Skills Matrix" and 'skills' in st.session_state:
+        if page == "Caravel Skills Matrix" and 'total_points' in st.session_state:
             st.markdown("---")
             st.markdown("### Points Tracker")
             progress = min(st.session_state.total_points / 90, 1.0)  # Using MAX_TOTAL_POINTS value directly
@@ -487,7 +487,8 @@ def main():
             st.error("This email has already submitted a response. Please use a different email address.")
             return
         
-        st.session_state.total_points = st.session_state.get('total_points', 0)
+        if 'total_points' not in st.session_state:
+            st.session_state.total_points = 0
         if 'skills' not in st.session_state:
             st.session_state.skills = {
                 'Advertising and Labeling Regulations (Pharma/BioTech) (Skill 1)': 0,
