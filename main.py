@@ -334,6 +334,119 @@ def clear_all_responses():
     except Exception as e:
         st.error(f"Error clearing responses: {e}")
         return False
+def create_pdf_report(submitter_name, submitter_email):
+    """Create a PDF version of the skills report"""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from io import BytesIO
+    import pandas as pd
+    from datetime import datetime
+
+    # Create a BytesIO buffer to receive PDF data
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+    
+    # Container for the 'Flowable' objects
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Load data
+    df = pd.read_csv("skills_matrix_responses.csv")
+    user_response = df[df['Submitter Email'] == submitter_email].iloc[-1]
+    
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        spaceAfter=30
+    )
+    elements.append(Paragraph(f"Skills Matrix Report", title_style))
+    elements.append(Paragraph(f"Generated for: {submitter_name}", styles['Heading2']))
+    elements.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Get metadata columns
+    metadata_cols = ['Response ID', 'Timestamp', 'Submitter Email', 'Submitter Name']
+    skill_cols = [col for col in df.columns if col not in metadata_cols]
+    
+    # Calculate team averages
+    team_df = df[df['Submitter Email'] != submitter_email]
+    team_averages = team_df[skill_cols].mean()
+    
+    # Categorize skills
+    expertise_categories = {
+        'Primary Expertise (8-10 points)': [],
+        'Secondary Expertise (3-7 points)': [],
+        'Limited Experience (1-2 points)': []
+    }
+    
+    for skill in skill_cols:
+        value = user_response[skill]
+        skill_name = skill.replace(' (Skill', '').split(')')[0]
+        team_avg = team_averages[skill]
+        
+        if value >= 8:
+            expertise_categories['Primary Expertise (8-10 points)'].append(
+                (skill_name, value, team_avg)
+            )
+        elif value >= 3:
+            expertise_categories['Secondary Expertise (3-7 points)'].append(
+                (skill_name, value, team_avg)
+            )
+        elif value >= 1:
+            expertise_categories['Limited Experience (1-2 points)'].append(
+                (skill_name, value, team_avg)
+            )
+    
+    # Add each category to the PDF
+    for category, skills in expertise_categories.items():
+        if skills:
+            # Add category header
+            elements.append(Spacer(1, 20))
+            elements.append(Paragraph(category, styles['Heading2']))
+            elements.append(Spacer(1, 10))
+            
+            # Create table data
+            table_data = [['Skill', 'Your Score', 'Team Average']]
+            for skill_name, value, team_avg in sorted(skills, key=lambda x: x[1], reverse=True):
+                table_data.append([
+                    skill_name,
+                    f"{value:.1f}",
+                    f"{team_avg:.1f}"
+                ])
+            
+            # Create and style the table
+            table = Table(table_data, colWidths=[4*inch, 1*inch, 1.5*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 14),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 12),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 3),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 10))
+    
+    # Build PDF
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
 def generate_skills_report(submitter_name, submitter_email):
     """Generate a skills report for the user who just submitted"""
     import pandas as pd
@@ -382,6 +495,15 @@ def generate_skills_report(submitter_name, submitter_email):
         st.markdown("## Your Skills Matrix Report")
         st.markdown(f"### Generated for: {submitter_name}")
         st.markdown(f"Submission Date: {user_response['Timestamp']}")
+        
+        # Add download button for PDF report
+        pdf_buffer = create_pdf_report(submitter_name, submitter_email)
+        st.download_button(
+            label="📥 Download PDF Report",
+            data=pdf_buffer,
+            file_name=f"skills_matrix_report_{submitter_name.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+        )
         
         # Create radar chart for top skills comparison
         top_skills = (user_skills['Primary'] + user_skills['Secondary'])[:8]  # Top 8 skills
@@ -450,24 +572,6 @@ def generate_skills_report(submitter_name, submitter_email):
                         """,
                         unsafe_allow_html=True
                     )
-        
-        # Create download button for PDF report
-        st.markdown("### Download Report")
-        st.markdown("Click below to download a PDF version of your report:")
-        
-        # Create a download button that triggers browser print
-        st.markdown("""
-            <button onclick="window.print()" style="
-                background-color: #4169E1;
-                color: white;
-                padding: 10px 20px;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                margin: 10px 0;">
-                📥 Download PDF Report
-            </button>
-        """, unsafe_allow_html=True)
         
     except Exception as e:
         st.error(f"Error generating report: {e}")
