@@ -334,15 +334,6 @@ def show_skills_form(submitter_email, submitter_name):
             st.stop()
         return
 
-    
-    # Visual progress indicator
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
-        st.progress(progress)
-    with col2:
-        st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
-
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
     if st.session_state.total_points >= MAX_TOTAL_POINTS:
