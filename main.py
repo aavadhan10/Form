@@ -399,9 +399,31 @@ def show_skills_form(submitter_email, submitter_name):
             else:
                 st.error("There was an error saving your response. Please try again.")
 def main():
-    # Initialize total_points in session state if it doesn't exist
+    # Initialize session state variables
     if 'total_points' not in st.session_state:
         st.session_state.total_points = 0
+    if 'previous_total' not in st.session_state:
+        st.session_state.previous_total = 0
+    
+    # Check if we just hit 90 points (comparing with previous total)
+    if st.session_state.previous_total < 90 and st.session_state.total_points >= 90:
+        # Create a warning dialog using columns to center it
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.warning("""
+                ### ⚠️ Maximum Points Reached!
+                
+                You have reached the maximum of 90 points. To add points to other skills, 
+                you will need to first reduce points from existing skills.
+                
+                Click anywhere outside this message to continue.
+            """)
+            # Add a small delay to ensure the warning is visible
+            import time
+            time.sleep(0.5)
+    
+    # Update previous_total for next check
+    st.session_state.previous_total = st.session_state.total_points
 
     # Sidebar for navigation and points tracking
     with st.sidebar:
