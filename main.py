@@ -323,10 +323,6 @@ def show_skills_form(submitter_email, submitter_name):
     # Check if form was already submitted
     if 'form_submitted' not in st.session_state:
         st.session_state.form_submitted = False
-        
-    # Create a placeholder for the alert at the start
-    if 'alert_placeholder' not in st.session_state:
-        st.session_state.alert_placeholder = st.empty()
     
     # If form was already submitted, show thank you message and exit
     if st.session_state.form_submitted:
@@ -343,25 +339,58 @@ def show_skills_form(submitter_email, submitter_name):
             st.stop()
         return
 
-    st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
-    
-    if st.session_state.total_points >= MAX_TOTAL_POINTS:
-        st.warning("You have used all 90 points. To add points to other skills, first reduce points elsewhere.")
-    
-    # Show the 90 points alert in the placeholder if needed
+    # Show the 90 points modal if needed
     if st.session_state.get('show_90_points_modal', False):
-        with st.session_state.alert_placeholder.container():
+        # Add CSS for modal overlay and positioning
+        st.markdown("""
+            <style>
+                div[data-modal-container='true'] {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    z-index: 1000;
+                    background: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    width: 80%;
+                    max-width: 600px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
+                div.modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    z-index: 999;
+                }
+            </style>
+            <div class='modal-overlay'></div>
+        """, unsafe_allow_html=True)
+        
+        # Create modal container
+        modal_container = st.container()
+        with modal_container:
+            st.markdown("<div data-modal-container='true'>", unsafe_allow_html=True)
             st.warning("### Maximum Points Reached! 🎉\n\n" + 
                     "You have now allocated all available points. To add points to other skills, " +
                     "you'll need to reduce points from your current allocations.\n\n" +
                     "Review your selections and adjust as needed to best reflect your expertise across different skills.")
             
-            # Center the button using columns
-            col1, col2, col3 = st.columns([1.5, 1, 1.5])
+            # Center the button
+            col1, col2, col3 = st.columns([1, 1, 1])
             with col2:
                 if st.button("OK, I'll adjust my values", key="modal_close"):
                     st.session_state.show_90_points_modal = False
                     st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
+    
+    if st.session_state.total_points >= MAX_TOTAL_POINTS:
+        st.warning("You have used all 90 points. To add points to other skills, first reduce points elsewhere.")
     
     st.markdown("---")
     
