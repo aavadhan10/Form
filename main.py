@@ -1,6 +1,5 @@
 import os
-print("File exists:", os.path.exists(RESPONSES_FILE))
-print("File is readable:", os.access(RESPONSES_FILE, os.R_OK))
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -12,7 +11,8 @@ file_lock = threading.Lock()
 # Add this at the top of your script or in the load_responses function
 print("Current working directory:", os.getcwd())
 print("Full path to responses file:", os.path.abspath(RESPONSES_FILE))
-
+print("File exists:", os.path.exists(RESPONSES_FILE))
+print("File is readable:", os.access(RESPONSES_FILE, os.R_OK))
 # Add this at the very top of your script
 st.set_page_config(page_title="Skills Matrix", layout="wide")
 
