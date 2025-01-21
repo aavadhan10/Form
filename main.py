@@ -1,4 +1,6 @@
 import os
+import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -332,7 +334,144 @@ def clear_all_responses():
     except Exception as e:
         st.error(f"Error clearing responses: {e}")
         return False
-
+def generate_skills_report(submitter_name, submitter_email):
+    """Generate a skills report for the user who just submitted"""
+    import pandas as pd
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from datetime import datetime
+    import streamlit as st
+    
+    # Load the responses
+    try:
+        df = pd.read_csv("skills_matrix_responses.csv")
+        
+        # Find the user's response
+        user_response = df[df['Submitter Email'] == submitter_email].iloc[-1]  # Get most recent if multiple
+        
+        # Get metadata columns
+        metadata_cols = ['Response ID', 'Timestamp', 'Submitter Email', 'Submitter Name']
+        skill_cols = [col for col in df.columns if col not in metadata_cols]
+        
+        # Calculate team averages (excluding the current user)
+        team_df = df[df['Submitter Email'] != submitter_email]
+        team_averages = team_df[skill_cols].mean()
+        
+        # Create user skills dictionary
+        user_skills = {
+            'Primary': [],
+            'Secondary': [],
+            'Limited': []
+        }
+        
+        # Categorize skills
+        for skill in skill_cols:
+            value = user_response[skill]
+            if value >= 8:
+                user_skills['Primary'].append((skill, value))
+            elif value >= 3:
+                user_skills['Secondary'].append((skill, value))
+            elif value >= 1:
+                user_skills['Limited'].append((skill, value))
+                
+        # Sort skills by value within each category
+        for category in user_skills:
+            user_skills[category].sort(key=lambda x: x[1], reverse=True)
+        
+        # Create the report
+        st.markdown("## Your Skills Matrix Report")
+        st.markdown(f"### Generated for: {submitter_name}")
+        st.markdown(f"Submission Date: {user_response['Timestamp']}")
+        
+        # Create radar chart for top skills comparison
+        top_skills = (user_skills['Primary'] + user_skills['Secondary'])[:8]  # Top 8 skills
+        if top_skills:
+            radar_data = {
+                'Skill': [skill[0].replace(' (Skill', '').split(')')[0] for skill in top_skills],
+                'Your Score': [skill[1] for skill in top_skills],
+                'Team Average': [team_averages[skill[0]] for skill in top_skills]
+            }
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatterpolar(
+                r=radar_data['Your Score'],
+                theta=radar_data['Skill'],
+                fill='toself',
+                name='Your Score',
+                line_color='#4169E1'
+            ))
+            fig.add_trace(go.Scatterpolar(
+                r=radar_data['Team Average'],
+                theta=radar_data['Skill'],
+                fill='toself',
+                name='Team Average',
+                line_color='#90EE90'
+            ))
+            
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 10]
+                    )),
+                showlegend=True,
+                title="Top Skills Comparison"
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Display categorized skills
+        categories = {
+            'Primary': ('🔵 Primary Areas of Expertise (8-10 points)', '#EBF5FF'),
+            'Secondary': ('🟢 Secondary Areas of Expertise (3-7 points)', '#F0FFF4'),
+            'Limited': ('🟡 Limited Experience (1-2 points)', '#FFFFF0')
+        }
+        
+        for category, (title, color) in categories.items():
+            if user_skills[category]:
+                st.markdown(f"### {title}")
+                for skill, value in user_skills[category]:
+                    # Remove the skill number suffix for cleaner display
+                    skill_name = skill.replace(' (Skill', '').split(')')[0]
+                    
+                    # Get team average for comparison
+                    team_avg = team_averages[skill]
+                    comparison = value - team_avg
+                    
+                    # Create colored box with skill info
+                    st.markdown(
+                        f"""
+                        <div style="background-color: {color}; padding: 10px; border-radius: 5px; margin: 5px 0;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>{skill_name}</span>
+                                <span><strong>{value} points</strong> (Team avg: {team_avg:.1f})</span>
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+        
+        # Create download button for PDF report
+        st.markdown("### Download Report")
+        st.markdown("Click below to download a PDF version of your report:")
+        
+        # Create a download button that triggers browser print
+        st.markdown("""
+            <button onclick="window.print()" style="
+                background-color: #4169E1;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin: 10px 0;">
+                📥 Download PDF Report
+            </button>
+        """, unsafe_allow_html=True)
+        
+    except Exception as e:
+        st.error(f"Error generating report: {e}")
+        return None
 def update_total_points():
     """Update the total points in session state"""
     total = 0
@@ -411,10 +550,13 @@ def show_skills_form(submitter_email, submitter_name):
     if 'form_submitted' not in st.session_state:
         st.session_state.form_submitted = False
     
-    # If form was already submitted, show thank you message and exit
+    # If form was already submitted, show thank you message and report
     if st.session_state.form_submitted:
         st.success(f"Thank you {submitter_name}! Your skills matrix has been submitted successfully!")
         st.balloons()
+        
+        # Generate and display the report
+        generate_skills_report(submitter_name, submitter_email)
         
         # Add a close button
         if st.button("Close Survey"):
