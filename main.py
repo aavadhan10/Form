@@ -288,13 +288,12 @@ def update_total_points():
                 continue
     st.session_state.total_points = round(total, 1)  # Round to 1 decimal place for consistency
     
-    # Add alert state management
-    if total >= 90 and not st.session_state.get('alert_shown', False):
-        st.session_state.show_alert = True
-        st.session_state.alert_shown = True
+    # Show modal when hitting 90 points
+    if total >= 90 and not st.session_state.get('modal_shown', False):
+        st.session_state.show_modal = True
+        st.session_state.modal_shown = True
     elif total < 90:
-        st.session_state.alert_shown = False
-
+        st.session_state.modal_shown = False
 
 def get_expertise_level(value):
     """Return expertise level emoji based on value"""
@@ -323,9 +322,36 @@ def show_skills_form(submitter_email, submitter_name):
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
-    # Initialize alert state
-    if 'show_alert' not in st.session_state:
-        st.session_state.show_alert = False
+    # Initialize modal state
+    if 'show_modal' not in st.session_state:
+        st.session_state.show_modal = False
+
+    # Add modal HTML
+    if st.session_state.get('show_modal', False):
+        modal_html = """
+        <div id="myModal" style="display:block; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; 
+            background-color:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center;">
+            <div style="background-color:white; padding:20px; border-radius:5px; width:400px; text-align:center;">
+                <h2 style="margin-bottom:20px;">Maximum Points Reached</h2>
+                <p style="margin-bottom:20px;">You have used all 90 points. To add points to other skills, 
+                   you'll need to reallocate points from existing skills.</p>
+                <button onclick="closeModal()" style="padding:10px 20px; background-color:#0066cc; color:white; 
+                    border:none; border-radius:5px; cursor:pointer;">OK, I'll Reallocate My Points</button>
+            </div>
+        </div>
+        <script>
+            function closeModal() {
+                document.getElementById('myModal').style.display = 'none';
+                window.parent.postMessage({type: 'modal_closed'}, '*');
+            }
+        </script>
+        """
+        st.components.v1.html(modal_html, height=0)
+        
+        # Listen for modal close event
+        if st.session_state.get('modal_closed', False):
+            st.session_state.show_modal = False
+            st.session_state.modal_closed = False
     
     # Check if form was already submitted
     if 'form_submitted' not in st.session_state:
@@ -345,37 +371,6 @@ def show_skills_form(submitter_email, submitter_name):
             st.markdown("Survey closed. Thank you for your participation!")
             st.stop()
         return
-
-    # Add the Points Alert component
-    components.html(
-        """
-        <div id="react-root"></div>
-        <script>
-            const root = document.getElementById('react-root');
-            const Component = React.memo(({ isOpen, onClose }) => {
-                return React.createElement(PointsAlert, { isOpen, onClose });
-            });
-            
-            ReactDOM.render(
-                React.createElement(Component, {
-                    isOpen: %s,
-                    onClose: () => {
-                        window.parent.postMessage({
-                            type: 'streamlit:message',
-                            data: { type: 'closeAlert' }
-                        }, '*');
-                    }
-                }),
-                root
-            );
-        </script>
-        """ % str(st.session_state.show_alert).lower(),
-        height=0
-    )
-    
-    # Handle alert close action
-    if st.session_state.get('show_alert', False):
-        st.session_state.show_alert = False
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
