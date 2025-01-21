@@ -333,51 +333,9 @@ def show_skills_form(submitter_email, submitter_name):
             st.markdown("Survey closed. Thank you for your participation!")
             st.stop()
         return
- # Create a sticky container for the progress indicator
-    with st.container():
-        st.markdown(
-            """
-            <style>
-                [data-testid="stSidebarUserContent"] {
-                    position: relative;
-                }
-                .sticky-progress {
-                    position: sticky;
-                    top: 0;
-                    z-index: 999;
-                    background-color: white;
-                    padding: 1rem 0;
-                    border-bottom: 1px solid #f0f0f0;
-                }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        with st.container():
-            st.markdown('<div class="sticky-progress">', unsafe_allow_html=True)
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
-                st.progress(progress)
-            with col2:
-                st.metric("Total Points Used", st.session_state.total_points, f"/{MAX_TOTAL_POINTS} available")
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            if st.session_state.total_points >= MAX_TOTAL_POINTS:
-                st.warning("⚠️ You've reached the maximum 90 points. To add points to other skills, you'll need to reduce points elsewhere first. There might be a slight delay when updating points due to processing.")
 
-    st.markdown("### Important Notes")
-    st.markdown("""
-    - The points tracker will stay visible at the top as you scroll
-    - When you reach 90 points total, the system will prevent adding more points
-    - There may be a slight delay when updating points due to processing
-    - To add points after reaching 90, you must first reduce points in other skills
-    """)
-
-    st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
-    
     st.markdown("---")
+    st.markdown("### Skills Entry Form")
     
     # Create input fields for each skill
     skill_inputs = {}
@@ -438,10 +396,43 @@ def show_skills_form(submitter_email, submitter_name):
                 st.error("There was an error saving your response. Please try again.")
 
 def main():
-    # Sidebar for navigation
+    # Sidebar for navigation and points tracking
     with st.sidebar:
         st.title("Navigation")
         page = st.radio("Go to", ["Caravel Skills Matrix", "Admin"])
+        
+        # Only show points tracker if we're on the main page and user has entered their info
+        if page == "Caravel Skills Matrix" and 'total_points' in st.session_state:
+            st.markdown("---")
+            st.markdown("### Points Tracker")
+            
+            # Progress bar for points
+            progress = min(st.session_state.total_points / MAX_TOTAL_POINTS, 1.0)
+            st.progress(progress)
+            
+            # Points display
+            current_points = st.session_state.total_points
+            remaining_points = MAX_TOTAL_POINTS - current_points
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Used", f"{int(current_points)}")
+            with col2:
+                st.metric("Left", f"{int(remaining_points)}")
+                
+            if current_points >= MAX_TOTAL_POINTS:
+                st.warning("⚠️ Max points reached!")
+            elif current_points > 80:
+                st.info(f"Almost there! {MAX_TOTAL_POINTS - current_points} points left")
+            
+            # Add the important notes in the sidebar too
+            st.markdown("---")
+            st.markdown("**Important Notes:**")
+            st.markdown("""
+            - Max points: 90
+            - Reduce points in one skill to add to another
+            - Type directly or use arrows to enter points
+            """)
     
     if page == "Admin":
         if not check_password():
@@ -449,7 +440,6 @@ def main():
             return
         show_admin_page()
         return
-    
     # Main form page
     st.title("Caravel Law Skills Matrix")
     
