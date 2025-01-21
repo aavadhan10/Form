@@ -334,8 +334,7 @@ def show_skills_form(submitter_email, submitter_name):
             st.stop()
         return
 
-    st.markdown("---")
-    st.markdown("### Skills Entry Form")
+
     
     # Create input fields for each skill
     skill_inputs = {}
