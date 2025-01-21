@@ -399,10 +399,25 @@ def show_skills_form(submitter_email, submitter_name):
             else:
                 st.error("There was an error saving your response. Please try again.")
 def main():
-    # Sidebar for navigation
+    # Sidebar for navigation and points tracking
     with st.sidebar:
         st.title("Navigation")
         page = st.radio("Go to", ["Caravel Skills Matrix", "Admin"])
+        
+        # Add points tracker in sidebar if on main form page and session state is initialized
+        if page == "Caravel Skills Matrix" and 'total_points' in st.session_state:
+            st.markdown("---")
+            st.markdown("### Points Tracker")
+            progress = min(st.session_state.total_points / 90, 1.0)  # Using MAX_TOTAL_POINTS value directly
+            st.progress(progress)
+            st.metric("Total Points Used", st.session_state.total_points, f"/90 available")
+            
+            # Add color-coded expertise level legend
+            st.markdown("---")
+            st.markdown("### Expertise Levels")
+            st.markdown("🔵 Primary (8-10 points)")
+            st.markdown("🟢 Secondary (3-7 points)")
+            st.markdown("🟡 Limited (1-2 points)")
     
     if page == "Admin":
         if not check_password():
