@@ -473,6 +473,9 @@ def main():
     
     **4. Total Points**
     Ensure that the total number of points you allocate across all skills does not exceed **90 points**.
+
+    **5. Reaching 90 Points**
+    Note: The system will not allow you to enter more values after you've reached 90 points. Once 90 points have been reached, adjust other entry values accordingly.
     
     ### Example Point Distribution
     - **Distribution and Supply Agreements:** 🔵 8 points (Primary area of expertise—highly experienced)
