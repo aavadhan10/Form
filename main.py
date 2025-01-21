@@ -342,11 +342,13 @@ def show_skills_form(submitter_email, submitter_name):
     # Show the 90 points modal if needed
     if st.session_state.get('show_90_points_modal', False):
         # Add CSS for modal overlay and positioning
-        # Create container for modal and button
-        col1, col2, col3 = st.columns([1,3,1])
-        with col2:
+        if st.session_state.get('show_90_points_modal', False):
             st.markdown("""
                 <style>
+                    .stButton button {
+                        z-index: 1002 !important;
+                        position: relative;
+                    }
                     .modal-overlay {
                         position: fixed;
                         top: 0;
@@ -355,11 +357,12 @@ def show_skills_form(submitter_email, submitter_name):
                         bottom: 0;
                         background: rgba(0, 0, 0, 0.5);
                         z-index: 1000;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
                     }
                     .modal-content {
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
                         background: white;
                         padding: 2rem;
                         border-radius: 5px;
@@ -380,22 +383,24 @@ def show_skills_form(submitter_email, submitter_name):
                         text-align: left;
                     }
                 </style>
-                <div class="modal-overlay">
-                    <div class="modal-content">
-                        <div class="modal-title">🎉 Maximum Points Reached!</div>
-                        <div class="modal-text">
-                            You have now allocated all available points. To add points to other skills, 
-                            you'll need to reduce points from your current allocations.<br><br>
-                            Review your selections and adjust as needed to best reflect your expertise across different skills.
-                        </div>
+                <div class="modal-overlay"></div>
+                <div class="modal-content">
+                    <div class="modal-title">🎉 Maximum Points Reached!</div>
+                    <div class="modal-text">
+                        You have now allocated all available points. To add points to other skills, 
+                        you'll need to reduce points from your current allocations.<br><br>
+                        Review your selections and adjust as needed to best reflect your expertise across different skills.
                     </div>
-                </div>
             """, unsafe_allow_html=True)
             
-            # Add the button using Streamlit's native component
-            if st.button("OK, I'll adjust my values", key="modal_button", type="primary"):
-                st.session_state.show_90_points_modal = False
-                st.rerun()
+            # Center the button
+            col1, col2, col3 = st.columns([1,1,1])
+            with col2:
+                if st.button("OK, I'll adjust my values", type="primary"):
+                    st.session_state.show_90_points_modal = False
+                    st.rerun()
+                    
+            st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
