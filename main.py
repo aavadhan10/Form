@@ -2,8 +2,9 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import uuid
-import os
 import streamlit.components.v1 as components
+import threading
+file_lock = threading.Lock()
 
 # Add this at the very top of your script
 st.set_page_config(page_title="Skills Matrix", layout="wide")
@@ -12,24 +13,29 @@ st.set_page_config(page_title="Skills Matrix", layout="wide")
 RESPONSES_FILE = "skills_matrix_responses.csv"
 
 def load_responses():
-    """Load responses from CSV file"""
+    """Load responses from CSV file with thread-safe file handling"""
     try:
-        if os.path.exists(RESPONSES_FILE):
-            df = pd.read_csv(RESPONSES_FILE)
-            # Ensure all required columns exist
-            required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
-            for col in required_columns:
-                if col not in df.columns:
-                    df[col] = ''
-            return df
-        # If file doesn't exist, create empty DataFrame with required columns
-        return pd.DataFrame(columns=['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email'])
+        with file_lock:
+            if os.path.exists(RESPONSES_FILE):
+                df = pd.read_csv(RESPONSES_FILE)
+                
+                # Ensure all required columns exist
+                required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
+                for col in required_columns:
+                    if col not in df.columns:
+                        df[col] = ''
+                
+                return df
+            
+            # If file doesn't exist, create empty DataFrame with required columns
+            return pd.DataFrame(columns=['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email'])
     except Exception as e:
         st.error(f"Error loading responses: {e}")
         return pd.DataFrame()
         
+# Updated save_response() function
 def save_response(response_data):
-    """Save response to CSV file"""
+    """Save response to CSV file with thread-safe file handling and backup"""
     try:
         # Load existing responses
         responses_df = load_responses()
@@ -51,10 +57,19 @@ def save_response(response_data):
             responses_df = responses_df.reindex(columns=all_columns)
             new_response = new_response.reindex(columns=all_columns)
         
+        # Concatenate new and existing responses
         updated_responses = pd.concat([responses_df, new_response], ignore_index=True)
         
-        # Save back to CSV
-        updated_responses.to_csv(RESPONSES_FILE, index=False)
+        # Create a backup of the existing file if it exists
+        if os.path.exists(RESPONSES_FILE):
+            backup_filename = f"{RESPONSES_FILE}.backup"
+            with file_lock:
+                os.replace(RESPONSES_FILE, backup_filename)
+        
+        # Save updated responses with thread-safe file writing
+        with file_lock:
+            updated_responses.to_csv(RESPONSES_FILE, index=False)
+        
         return True
     except Exception as e:
         st.error(f"Error saving response: {e}")
@@ -107,7 +122,7 @@ def show_admin_page():
             st.metric("Unique Participants", len(responses_df['Submitter Email'].unique()))
         with col3:
             # Download and refresh buttons side by side
-            subcol1, subcol2 = st.columns(2)
+            subcol1, subcol2, subcol3 = st.columns(3)
             with subcol1:
                 st.download_button(
                     "📥 Download All Responses",
@@ -119,9 +134,14 @@ def show_admin_page():
             with subcol2:
                 if st.button("🔄 Refresh Data"):
                     st.experimental_rerun()
+            with subcol3:
+                # Optional: Add a button to clear all responses
+                if st.button("🗑️ Clear All Responses", type="warning"):
+                    clear_all_responses()
+                    st.experimental_rerun()
         
         # Tabs for different analysis views
-        tab1, tab2, tab3 = st.tabs(["Raw Data", "Skills Analysis", "Form Submission Trends"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Raw Data", "Skills Analysis", "Form Submission Trends", "Response Management"])
         
         # Tab 1: Raw Data
         with tab1:
@@ -269,8 +289,73 @@ def show_admin_page():
             ))
             fig5.update_layout(title='Cumulative Submissions Over Time')
             st.plotly_chart(fig5, use_container_width=True)
+        
+        # Tab 4: Response Management
+        with tab4:
+            st.subheader("Response Management")
+            
+            # Select response to view or delete
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Detailed response view
+                view_response = st.selectbox(
+                    "View Specific Response Details", 
+                    options=[''] + list(responses_df['Response ID'].unique())
+                )
+                if view_response:
+                    selected_response = responses_df[responses_df['Response ID'] == view_response]
+                    st.write("Selected Response Details:")
+                    st.dataframe(selected_response)
+            
+            with col2:
+                # Delete response functionality
+                delete_response = st.selectbox(
+                    "Delete Specific Response", 
+                    options=[''] + list(responses_df['Response ID'].unique())
+                )
+                if delete_response:
+                    if st.button(f"Confirm Delete Response {delete_response}", type="primary"):
+                        delete_response_by_id(delete_response)
+                        st.experimental_rerun()
     else:
         st.info("No responses collected yet.")
+# New helper functions for admin operations
+def delete_response_by_id(response_id):
+    """Delete a specific response by its ID"""
+    try:
+        responses_df = load_responses()
+        
+        # Remove the response with the matching ID
+        updated_responses = responses_df[responses_df['Response ID'] != response_id]
+        
+        # Save the updated responses
+        with file_lock:
+            updated_responses.to_csv(RESPONSES_FILE, index=False)
+        
+        st.success(f"Response {response_id} deleted successfully.")
+        return True
+    except Exception as e:
+        st.error(f"Error deleting response: {e}")
+        return False
+
+def clear_all_responses():
+    """Clear all responses from the CSV file"""
+    try:
+        # Create an empty DataFrame with the correct columns
+        empty_df = pd.DataFrame(
+            columns=['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
+        )
+        
+        # Save the empty DataFrame
+        with file_lock:
+            empty_df.to_csv(RESPONSES_FILE, index=False)
+        
+        st.success("All responses have been cleared.")
+        return True
+    except Exception as e:
+        st.error(f"Error clearing responses: {e}")
+        return False
 
 def update_total_points():
     """Update the total points in session state"""
