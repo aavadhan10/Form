@@ -503,9 +503,21 @@ def show_skills_form(submitter_email, submitter_name):
             else:
                 st.error("There was an error saving your response. Please try again.")
 def main():
-    # Initialize session states
+    # Initialize all required session state variables
     if 'admin_view' not in st.session_state:
         st.session_state.admin_view = False
+    
+    if 'total_points' not in st.session_state:
+        st.session_state.total_points = 0
+    
+    if 'form_submitted' not in st.session_state:
+        st.session_state.form_submitted = False
+    
+    if 'show_modal' not in st.session_state:
+        st.session_state.show_modal = False
+    
+    if 'modal_shown' not in st.session_state:
+        st.session_state.modal_shown = False
         
     # Sidebar navigation
     with st.sidebar:
@@ -522,7 +534,6 @@ def main():
                 st.session_state.admin_view = True
         else:
             st.session_state.admin_view = False
-        
         # Always show points tracker in sidebar
         st.markdown("---")
         st.markdown("### Points Tracker")
