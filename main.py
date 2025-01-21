@@ -3,12 +3,18 @@ import pandas as pd
 from datetime import datetime
 import uuid
 import os
+import io
+import matplotlib.pyplot as plt
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import Image as ReportlabImage
+from PIL import Image
+
+# If you need HTML components:
 import streamlit.components.v1 as components
 
-# Add this at the very top of your script
 st.set_page_config(page_title="Skills Matrix", layout="wide")
 
-# Constants
 RESPONSES_FILE = "skills_matrix_responses.csv"
 
 def load_responses():
@@ -31,7 +37,6 @@ def load_responses():
 def save_response(response_data):
     """Save response to CSV file"""
     try:
-        # Load existing responses
         responses_df = load_responses()
         
         # Make sure all columns exist in the DataFrame
@@ -40,14 +45,11 @@ def save_response(response_data):
             if col not in responses_df.columns:
                 responses_df[col] = ''
         
-        # Add new response
         new_response = pd.DataFrame([response_data])
         
         # Ensure columns are in the correct order
         if not responses_df.empty:
-            # Get all columns from both DataFrames
             all_columns = responses_df.columns.union(new_response.columns)
-            # Reindex both DataFrames with all columns
             responses_df = responses_df.reindex(columns=all_columns)
             new_response = new_response.reindex(columns=all_columns)
         
@@ -62,51 +64,38 @@ def save_response(response_data):
 
 def check_password():
     """Returns `True` if the user had the correct password."""
-
     def password_entered():
-        """Checks whether a password entered by the user is correct."""
         if st.session_state["password"] == st.secrets["admin_password"]:
             st.session_state["password_correct"] = True
-            st.session_state.password = ''  # Clear the password field
+            st.session_state.password = ''  # Clear
         else:
             st.session_state["password_correct"] = False
 
-    # Return True if the password is validated
     if st.session_state.get("password_correct", False):
         return True
 
-    # Show input for password
-    st.text_input(
-        "Password", 
-        type="password", 
-        on_change=password_entered, 
-        key="password"
-    )
+    st.text_input("Password", type="password", on_change=password_entered, key="password")
     if "password_correct" in st.session_state:
         st.error("😕 Password incorrect")
     return False
 
 def show_admin_page():
-    """Shows the admin page with download functionality and advanced analytics"""
+    """Shows the admin page with download and advanced analytics"""
     import plotly.express as px
     import plotly.graph_objects as go
     st.header("Admin Dashboard")
     
-    # Load responses from file
     responses_df = load_responses()
     
     if not responses_df.empty:
-        # Define metadata columns to exclude from skills analysis
         metadata_cols = ['Response ID', 'Timestamp', 'Submitter Email', 'Submitter Name']
         
-        # Top section with key metrics and download
         col1, col2, col3 = st.columns([1,1,2])
         with col1:
             st.metric("Total Submissions", len(responses_df))
         with col2:
             st.metric("Unique Participants", len(responses_df['Submitter Email'].unique()))
         with col3:
-            # Download and refresh buttons side by side
             subcol1, subcol2 = st.columns(2)
             with subcol1:
                 st.download_button(
@@ -120,36 +109,27 @@ def show_admin_page():
                 if st.button("🔄 Refresh Data"):
                     st.experimental_rerun()
         
-        # Tabs for different analysis views
         tab1, tab2, tab3 = st.tabs(["Raw Data", "Skills Analysis", "Form Submission Trends"])
         
-        # Tab 1: Raw Data
         with tab1:
             st.subheader("Raw Response Data")
-            # Reorder columns to show metadata first
-            metadata_cols = ['Response ID', 'Timestamp', 'Submitter Email', 'Submitter Name']
-            other_cols = [col for col in responses_df.columns if col not in metadata_cols]
+            other_cols = [c for c in responses_df.columns if c not in metadata_cols]
             ordered_cols = metadata_cols + other_cols
             st.dataframe(responses_df[ordered_cols])
             
-        # Tab 2: Skills Analysis
         with tab2:
-            # Calculate skill columns (excluding metadata columns)
+            st.subheader("Summary Statistics")
             skill_cols = [col for col in responses_df.columns if col not in metadata_cols]
             
-            # Summary statistics table
-            st.subheader("Summary Statistics")
             col1, col2 = st.columns(2)
             
-            # Calculate expertise distribution
             def get_expertise_counts(row):
                 try:
                     primary = sum(1 for x in row if isinstance(x, (int, float)) and x >= 8)
                     secondary = sum(1 for x in row if isinstance(x, (int, float)) and 3 <= x < 8)
                     limited = sum(1 for x in row if isinstance(x, (int, float)) and 1 <= x < 3)
                     return pd.Series({'Primary': primary, 'Secondary': secondary, 'Limited': limited})
-                except Exception as e:
-                    print(f"Error processing row: {row}")
+                except Exception:
                     return pd.Series({'Primary': 0, 'Secondary': 0, 'Limited': 0})
             
             expertise_dist = responses_df[skill_cols].apply(get_expertise_counts, axis=1)
@@ -169,7 +149,6 @@ def show_admin_page():
             
             with col2:
                 st.markdown("**Top Skills by Expertise Level:**")
-                # Get top skills for each level
                 top_skills = {}
                 for skill in skill_cols:
                     primary_count = len(responses_df[responses_df[skill] >= 8])
@@ -196,24 +175,22 @@ def show_admin_page():
                 })
                 st.table(top_skills_df)
 
-            # Average points visualization
             st.subheader("Average Points by Skill")
             avg_points = responses_df[skill_cols].mean().sort_values(ascending=False)
-            
-            # Create a bar chart for average points with color coding
             fig = px.bar(
                 x=avg_points.index,
                 y=avg_points.values,
                 color=avg_points.values,
-                color_continuous_scale=[[0, '#FFE5B4'],  # Light yellow for limited
-                                      [0.3, '#90EE90'],  # Green for secondary
-                                      [0.8, '#4169E1']], # Blue for primary
+                color_continuous_scale=[
+                    [0, '#FFE5B4'],
+                    [0.3, '#90EE90'],
+                    [0.8, '#4169E1']
+                ],
                 title='Average Points by Skill'
             )
             fig.update_layout(showlegend=False, xaxis_tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
             
-            # Show top skills with color coding
             st.subheader("Most Common Primary Expertise Areas")
             primary_expertise = pd.DataFrame()
             for skill in skill_cols:
@@ -227,36 +204,30 @@ def show_admin_page():
                     x=primary_expertise.index,
                     y=primary_expertise['Count'],
                     color=primary_expertise['Count'],
-                    color_continuous_scale=[[0, '#4169E1'], [1, '#4169E1']],  # Blue for primary expertise
+                    color_continuous_scale=[[0, '#4169E1'], [1, '#4169E1']],
                     title='Number of Primary Expertise Areas'
                 )
                 fig2.update_layout(showlegend=False, xaxis_tickangle=-45)
                 st.plotly_chart(fig2, use_container_width=True)
         
-        # Tab 3: Form Submission Trends
         with tab3:
             st.subheader("Submission Trends")
-            
-            # Convert timestamp to datetime if it's not already
             responses_df['Timestamp'] = pd.to_datetime(responses_df['Timestamp'])
-            
-            # Daily submissions
             daily_submissions = responses_df.groupby(responses_df['Timestamp'].dt.date).size().reset_index()
             daily_submissions.columns = ['Date', 'Submissions']
             
-            # Daily submissions with color
+            import plotly.graph_objects as go
             fig4 = go.Figure()
             fig4.add_trace(go.Scatter(
                 x=daily_submissions['Date'],
                 y=daily_submissions['Submissions'],
                 mode='lines+markers',
                 name='Daily Submissions',
-                line=dict(color='#4169E1')  # Blue
+                line=dict(color='#4169E1')
             ))
             fig4.update_layout(title='Daily Submissions')
             st.plotly_chart(fig4, use_container_width=True)
             
-            # Cumulative submissions with color
             st.subheader("Cumulative Submissions")
             daily_submissions['Cumulative'] = daily_submissions['Submissions'].cumsum()
             fig5 = go.Figure()
@@ -265,7 +236,7 @@ def show_admin_page():
                 y=daily_submissions['Cumulative'],
                 mode='lines+markers',
                 name='Cumulative Submissions',
-                line=dict(color='#90EE90')  # Green
+                line=dict(color='#90EE90')
             ))
             fig5.update_layout(title='Cumulative Submissions Over Time')
             st.plotly_chart(fig5, use_container_width=True)
@@ -273,7 +244,6 @@ def show_admin_page():
         st.info("No responses collected yet.")
 
 def update_total_points():
-    """Update the total points in session state"""
     total = 0
     for skill in st.session_state.skills.keys():
         input_key = f"input_{skill}"
@@ -286,9 +256,8 @@ def update_total_points():
                     total += value
             except (ValueError, TypeError):
                 continue
-    st.session_state.total_points = round(total, 1)  # Round to 1 decimal place for consistency
+    st.session_state.total_points = round(total, 1)
     
-    # Show modal when hitting 90 points
     if total >= 90 and not st.session_state.get('modal_shown', False):
         st.session_state.show_modal = True
         st.session_state.modal_shown = True
@@ -296,7 +265,6 @@ def update_total_points():
         st.session_state.modal_shown = False
 
 def get_expertise_level(value):
-    """Return expertise level emoji based on value"""
     if value >= 8:
         return "🔵 Primary"
     elif value >= 3:
@@ -306,8 +274,8 @@ def get_expertise_level(value):
     return ""
 
 def is_email_unique(email):
-    """Check if email is unique in responses (except for test email)"""
-    if email == "aavadhan@umich.edu":  # Allow multiple submissions for test email
+    # Allow multiple for this test email
+    if email == "aavadhan@umich.edu":
         return True
     
     responses_df = load_responses()
@@ -316,17 +284,91 @@ def is_email_unique(email):
         return email not in existing_emails
     return True
 
+# -----------
+# NEW FUNCTION: Generate a PDF in memory with user data & a simple bar chart
+# -----------
+def generate_user_report(name, email, skill_dict, total_points):
+    """
+    Generates a PDF report in memory for the user's skill distribution.
+    Returns the PDF bytes.
+    """
+    # 1) Create a bar chart for the user's allocated points
+    fig, ax = plt.subplots(figsize=(6, 4))
+    skills = list(skill_dict.keys())
+    values = [skill_dict[s] for s in skills]
+
+    ax.barh(skills, values, color="skyblue")
+    ax.set_xlabel("Points")
+    ax.set_ylabel("Skills")
+    ax.set_title("Your Skill Allocations")
+
+    # The chart might be huge with 168 skills; 
+    #   you can limit or do top 10 for a better display, 
+    #   or use smaller text:
+    plt.tight_layout()
+
+    # 2) Save this chart as an image (in memory)
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.close(fig)
+    buf.seek(0)
+
+    # 3) Start a PDF with ReportLab
+    pdf_buffer = io.BytesIO()
+    c = canvas.Canvas(pdf_buffer, pagesize=letter)
+    
+    text_x = 50
+    text_y = 720
+    
+    # Basic Title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(text_x, text_y, f"Skills Matrix Report for {name}")
+    
+    c.setFont("Helvetica", 12)
+    c.drawString(text_x, text_y - 20, f"Email: {email}")
+    c.drawString(text_x, text_y - 40, f"Total Points Allocated: {total_points}/90")
+    
+    # 4) Insert the bar chart image
+    #   Turn that PNG buffer into a PIL Image so we can embed it in PDF:
+    chart_img = Image.open(buf)
+    
+    # Scale image if you want smaller
+    #   e.g. chart_img = chart_img.resize((400, 300))
+    
+    # Save a temporary PNG to embed
+    chart_temp = io.BytesIO()
+    chart_img.save(chart_temp, format='PNG')
+    chart_temp.seek(0)
+    
+    # Insert into PDF at some coordinates
+    #   We can also scale via width/height if needed.
+    c.drawImage(ReportlabImage(chart_temp), 50, 400, width=400, height=250)
+    
+    # 5) Possibly add a short "Analysis" below
+    # Example: Show top 5 skills with largest points
+    sorted_skills = sorted(skill_dict.items(), key=lambda x: x[1], reverse=True)
+    top_skills_str = "Top 5 Skills (with points):"
+    c.drawString(text_x, 380, top_skills_str)
+    
+    offset = 360
+    for i, (skill, pts) in enumerate(sorted_skills[:5], start=1):
+        c.drawString(text_x, offset, f"{i}. {skill} - {pts}")
+        offset -= 20
+    
+    c.showPage()
+    c.save()
+    
+    pdf_buffer.seek(0)
+    return pdf_buffer.getvalue()
+
 def show_skills_form(submitter_email, submitter_name):
-    """Display the skills matrix form"""
-    # Constants
     MAX_TOTAL_POINTS = 90
     MAX_POINTS_PER_SKILL = 10
     
-    # Initialize modal state
     if 'show_modal' not in st.session_state:
         st.session_state.show_modal = False
 
-    # Add modal HTML
+    # Modal
     if st.session_state.get('show_modal', False):
         modal_html = """
         <div id="myModal" style="display:block; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; 
@@ -346,28 +388,47 @@ def show_skills_form(submitter_email, submitter_name):
             }
         </script>
         """
-        st.components.v1.html(modal_html, height=0)
+        components.html(modal_html, height=0)
         
-        # Listen for modal close event
         if st.session_state.get('modal_closed', False):
             st.session_state.show_modal = False
             st.session_state.modal_closed = False
     
-    # Check if form was already submitted
     if 'form_submitted' not in st.session_state:
         st.session_state.form_submitted = False
     
-    # If form was already submitted, show thank you message and exit
     if st.session_state.form_submitted:
         st.success(f"Thank you {submitter_name}! Your skills matrix has been submitted successfully!")
         st.balloons()
         
+        # ----------------------------
+        # NEW: "Download Your PDF" Option
+        # ----------------------------
+        if "last_response_data" in st.session_state:
+            # Build the PDF
+            rd = st.session_state["last_response_data"]
+            pdf_bytes = generate_user_report(
+                name=rd["Submitter Name"],
+                email=rd["Submitter Email"],
+                skill_dict={
+                    k: rd[k]
+                    for k in rd.keys()
+                    if k not in ["Response ID","Timestamp","Submitter Name","Submitter Email"]
+                },
+                total_points=st.session_state.total_points
+            )
+            
+            st.download_button(
+                label="Download Your PDF Report",
+                data=pdf_bytes,
+                file_name=f"{submitter_name}_SkillsMatrixReport.pdf",
+                mime="application/pdf"
+            )
+        
         # Add a close button
         if st.button("Close Survey"):
-            # Reset all session state variables
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
-            # Force redirect to a blank state
             st.markdown("Survey closed. Thank you for your participation!")
             st.stop()
         return
@@ -379,7 +440,6 @@ def show_skills_form(submitter_email, submitter_name):
     
     st.markdown("---")
     
-    # Create input fields for each skill
     skill_inputs = {}
     for skill in st.session_state.skills.keys():
         col1, col2, col3 = st.columns([3, 1, 1])
@@ -387,37 +447,37 @@ def show_skills_form(submitter_email, submitter_name):
         with col1:
             st.markdown(f"**{skill}**")
         
-        # Calculate maximum points available for this skill
         current_skill_points = st.session_state.get(f"input_{skill}", 0)
         remaining_points = MAX_TOTAL_POINTS - (st.session_state.total_points - current_skill_points)
         points_available = min(MAX_POINTS_PER_SKILL, remaining_points)
         
         with col2:
-            try:
-                value = st.number_input(
-                    f"{skill} points",
-                    min_value=0,
-                    max_value=points_available,
-                    value=current_skill_points,
-                    key=f"input_{skill}",
-                    on_change=update_total_points,
-                    help="You've used all 90 points. To add points here, first reduce points in other skills." if st.session_state.total_points >= MAX_TOTAL_POINTS and current_skill_points == 0 else None
+            new_value = st.number_input(
+                f"{skill} points",
+                min_value=0,
+                value=current_skill_points,
+                step=1,
+                key=f"input_{skill}",
+                on_change=update_total_points
+            )
+            
+            if new_value > points_available:
+                st.warning(
+                    f"Value must be {points_available} or less, please reallocate points in order to resume."
                 )
-                st.session_state.skills[skill] = value
-                skill_inputs[skill] = value
-            except:
-                if st.session_state.total_points >= MAX_TOTAL_POINTS:
-                    st.error("You've used all 90 points. To add points here, first reduce points in other skills.")
+                st.session_state[f"input_{skill}"] = points_available
+                new_value = points_available
+            
+            st.session_state.skills[skill] = new_value
+            skill_inputs[skill] = new_value
         
         with col3:
-            st.markdown(get_expertise_level(value))
+            st.markdown(get_expertise_level(new_value))
     
-    # Submit form
     with st.form("skills_matrix"):
         submitted = st.form_submit_button("Submit Skills Matrix")
         
         if submitted:
-            # Validate total points before submission
             if abs(st.session_state.total_points - MAX_TOTAL_POINTS) > 0.1:
                 st.error(f"Total points must be exactly {MAX_TOTAL_POINTS}. Current total: {st.session_state.total_points}")
                 return
@@ -431,11 +491,12 @@ def show_skills_form(submitter_email, submitter_name):
             }
             
             if save_response(response_data):
-                # Set form_submitted to True instead of refreshing
+                st.session_state["last_response_data"] = response_data
                 st.session_state.form_submitted = True
-                st.experimental_rerun()  # This will be the last refresh to show success message
+                st.experimental_rerun()
             else:
                 st.error("There was an error saving your response. Please try again.")
+
 def main():
     # Initialize total_points in session state if it doesn't exist
     if 'total_points' not in st.session_state:
