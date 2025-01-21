@@ -342,50 +342,59 @@ def show_skills_form(submitter_email, submitter_name):
     # Show the 90 points modal if needed
     if st.session_state.get('show_90_points_modal', False):
         # Add CSS for modal overlay and positioning
-        st.markdown("""
+        # Create modal container with styling
+        modal_content = """
             <style>
-                div[data-modal-container='true'] {
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 1000;
-                    background: white;
-                    padding: 20px;
-                    border-radius: 10px;
-                    width: 80%;
-                    max-width: 600px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                }
-                div.modal-overlay {
+                .modal-overlay {
                     position: fixed;
                     top: 0;
                     left: 0;
-                    width: 100%;
-                    height: 100%;
+                    right: 0;
+                    bottom: 0;
                     background: rgba(0, 0, 0, 0.5);
-                    z-index: 999;
+                    z-index: 1000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .modal-content {
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 5px;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                    width: 90%;
+                    max-width: 500px;
+                }
+                .modal-title {
+                    color: #FF4B4B;
+                    font-size: 1.5rem;
+                    margin-bottom: 1rem;
+                }
+                .modal-text {
+                    font-size: 1rem;
+                    margin-bottom: 1.5rem;
                 }
             </style>
-            <div class='modal-overlay'></div>
-        """, unsafe_allow_html=True)
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-title">🎉 Maximum Points Reached!</div>
+                    <div class="modal-text">
+                        You have now allocated all available points. To add points to other skills, 
+                        you'll need to reduce points from your current allocations.<br><br>
+                        Review your selections and adjust as needed to best reflect your expertise across different skills.
+                    </div>
+                </div>
+            </div>
+        """
+        st.markdown(modal_content, unsafe_allow_html=True)
         
-        # Create modal container
-        modal_container = st.container()
-        with modal_container:
-            st.markdown("<div data-modal-container='true'>", unsafe_allow_html=True)
-            st.warning("### Maximum Points Reached! 🎉\n\n" + 
-                    "You have now allocated all available points. To add points to other skills, " +
-                    "you'll need to reduce points from your current allocations.\n\n" +
-                    "Review your selections and adjust as needed to best reflect your expertise across different skills.")
-            
-            # Center the button
-            col1, col2, col3 = st.columns([1, 1, 1])
-            with col2:
-                if st.button("OK, I'll adjust my values", key="modal_close"):
-                    st.session_state.show_90_points_modal = False
-                    st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
+        # Create a container for the button
+        button_container = st.container()
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            if st.button("OK, I'll adjust my values", key="modal_close"):
+                st.session_state.show_90_points_modal = False
+                st.rerun()
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
