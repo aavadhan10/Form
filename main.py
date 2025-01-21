@@ -291,8 +291,8 @@ def show_admin_page():
             fig5.update_layout(title='Cumulative Submissions Over Time')
             st.plotly_chart(fig5, use_container_width=True)
         
-        # Tab 4: Response Management
-with tab4:
+       # Tab 4: Response Management
+    with tab4:
     st.subheader("Response Management")
     
     # Select response to view or delete
