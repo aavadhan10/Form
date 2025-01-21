@@ -367,14 +367,7 @@ def get_expertise_level(value):
     return ""
 
 def is_email_unique(email):
-    """Check if email is unique in responses (except for test email)"""
-    if email == "aavadhan@umich.edu":  # Allow multiple submissions for test email
-        return True
-    
-    responses_df = load_responses()
-    if not responses_df.empty:
-        existing_emails = responses_df['Submitter Email'].tolist()
-        return email not in existing_emails
+    """Remove email uniqueness check, allowing multiple submissions"""
     return True
 
 def show_skills_form(submitter_email, submitter_name):
