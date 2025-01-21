@@ -342,78 +342,60 @@ def show_skills_form(submitter_email, submitter_name):
     # Show the 90 points modal if needed
     if st.session_state.get('show_90_points_modal', False):
         # Add CSS for modal overlay and positioning
-        # Create modal container with styling that includes the button
-        modal_content = """
-            <style>
-                .modal-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.5);
-                    z-index: 1000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .modal-content {
-                    background: white;
-                    padding: 2rem;
-                    border-radius: 5px;
-                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                    width: 90%;
-                    max-width: 500px;
-                    text-align: center;
-                    z-index: 1001;
-                }
-                .modal-title {
-                    color: #FF4B4B;
-                    font-size: 1.5rem;
-                    margin-bottom: 1rem;
-                }
-                .modal-text {
-                    font-size: 1rem;
-                    margin-bottom: 1.5rem;
-                    text-align: left;
-                }
-                .modal-button {
-                    background-color: rgb(255, 75, 75);
-                    color: white;
-                    padding: 0.5rem 1rem;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 1rem;
-                    margin-top: 1rem;
-                }
-                .modal-button:hover {
-                    background-color: rgb(255, 45, 45);
-                }
-            </style>
-            <div class="modal-overlay">
-                <div class="modal-content">
-                    <div class="modal-title">🎉 Maximum Points Reached!</div>
-                    <div class="modal-text">
-                        You have now allocated all available points. To add points to other skills, 
-                        you'll need to reduce points from your current allocations.<br><br>
-                        Review your selections and adjust as needed to best reflect your expertise across different skills.
+        # Create container for modal and button
+        col1, col2, col3 = st.columns([1,3,1])
+        with col2:
+            st.markdown("""
+                <style>
+                    .modal-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.5);
+                        z-index: 1000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .modal-content {
+                        background: white;
+                        padding: 2rem;
+                        border-radius: 5px;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                        width: 90%;
+                        max-width: 500px;
+                        text-align: center;
+                        z-index: 1001;
+                    }
+                    .modal-title {
+                        color: #FF4B4B;
+                        font-size: 1.5rem;
+                        margin-bottom: 1rem;
+                    }
+                    .modal-text {
+                        font-size: 1rem;
+                        margin-bottom: 1.5rem;
+                        text-align: left;
+                    }
+                </style>
+                <div class="modal-overlay">
+                    <div class="modal-content">
+                        <div class="modal-title">🎉 Maximum Points Reached!</div>
+                        <div class="modal-text">
+                            You have now allocated all available points. To add points to other skills, 
+                            you'll need to reduce points from your current allocations.<br><br>
+                            Review your selections and adjust as needed to best reflect your expertise across different skills.
+                        </div>
                     </div>
-                    <button class="modal-button" onclick="
-                        window.streamlitCommandBus && window.streamlitCommandBus.setComponentValue('modal_close', true)
-                    ">OK, I'll adjust my values</button>
                 </div>
-            </div>
-        """
-        
-        # Add modal to the page
-        st.markdown(modal_content, unsafe_allow_html=True)
-        
-        # Handle button click
-        if st.session_state.get('modal_close'):
-            st.session_state.show_90_points_modal = False
-            st.session_state.modal_close = False
-            st.rerun()
+            """, unsafe_allow_html=True)
+            
+            # Add the button using Streamlit's native component
+            if st.button("OK, I'll adjust my values", key="modal_button", type="primary"):
+                st.session_state.show_90_points_modal = False
+                st.rerun()
 
     st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
     
