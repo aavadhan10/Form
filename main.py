@@ -412,18 +412,14 @@ def main():
         
     # Show modal when 90 points is reached
     if st.session_state.show_90_points_modal:
-        # Add some spacing to push content to center
-        st.markdown("<br>" * 10, unsafe_allow_html=True)
-        
-        # Create centered container
-        modal_col1, modal_col2, modal_col3 = st.columns(3)
-        
-        with modal_col2:
-            st.info("### Maximum Points Reached! 🎉\n\n" + 
-                   "You have now allocated all available points. To add points to other skills, " +
-                   "you'll need to reduce points from your current allocations.\n\n" +
-                   "Review your selections and adjust as needed to best reflect your expertise across different skills.")
+        st.error("### Maximum Points Reached! 🎉\n\n" + 
+                "You have now allocated all available points. To add points to other skills, " +
+                "you'll need to reduce points from your current allocations.\n\n" +
+                "Review your selections and adjust as needed to best reflect your expertise across different skills.")
             
+        # Center the button using columns
+        col1, col2, col3 = st.columns([1.5, 1, 1.5])
+        with col2:
             if st.button("OK, I'll adjust my values", key="modal_close"):
                 st.session_state.show_90_points_modal = False
                 st.rerun()
