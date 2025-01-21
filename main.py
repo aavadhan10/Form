@@ -10,23 +10,64 @@ file_lock = threading.Lock()
 # Constants
 RESPONSES_FILE = "skills_matrix_responses.csv"
 
-def debug_csv_file():
-    try:
-        with open(RESPONSES_FILE, 'r') as f:
-            print("First few lines of the CSV:")
-            for _ in range(5):
-                print(f.readline().strip())
-    except Exception as e:
-        print(f"Error reading file: {e}")
+def check_password():
+    """Returns True if the user entered the correct password"""
+    # Initialize session state for password protection
+    if 'password_correct' not in st.session_state:
+        st.session_state.password_correct = False
+        
+    if 'password_tries' not in st.session_state:
+        st.session_state.password_tries = 0
 
-debug_csv_file()
+    def password_entered():
+        try:
+            if st.session_state["password"] == st.secrets["admin_password"]:
+                st.session_state["password_correct"] = True
+                st.session_state.password = ''
+                st.session_state.password_tries = 0
+            else:
+                st.session_state["password_correct"] = False
+                st.session_state.password_tries += 1
+        except Exception as e:
+            st.error(f"Error validating password: {e}")
+            return False
+
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password
+    st.text_input(
+        "Password", 
+        type="password", 
+        on_change=password_entered, 
+        key="password"
+    )
+    
+    if "password_correct" in st.session_state and not st.session_state.password_correct:
+        if st.session_state.password_tries >= 3:
+            st.error("Too many incorrect attempts. Please try again later.")
+            return False
+        st.error("😕 Password incorrect")
+    
+    return False
+
 
 def load_responses():
-    """Load responses from CSV file with thread-safe file handling"""
+    """Load responses from CSV file with thread-safe file handling and backup"""
     try:
         with file_lock:
             if os.path.exists(RESPONSES_FILE):
-                df = pd.read_csv(RESPONSES_FILE)
+                # Create a backup before loading
+                backup_filename = f"{RESPONSES_FILE}.backup"
+                try:
+                    os.replace(RESPONSES_FILE, backup_filename)
+                    df = pd.read_csv(RESPONSES_FILE + ".backup")
+                    # Restore original file
+                    os.replace(backup_filename, RESPONSES_FILE)
+                except Exception as e:
+                    st.error(f"Error during backup: {e}")
+                    # Try to read original file if backup fails
+                    df = pd.read_csv(RESPONSES_FILE)
                 
                 # Ensure all required columns exist
                 required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
@@ -40,75 +81,46 @@ def load_responses():
             return pd.DataFrame(columns=['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email'])
     except Exception as e:
         st.error(f"Error loading responses: {e}")
+        # Try to recover from backup if main file is corrupted
+        try:
+            if os.path.exists(RESPONSES_FILE + ".backup"):
+                df = pd.read_csv(RESPONSES_FILE + ".backup")
+                return df
+        except:
+            pass
         return pd.DataFrame()
-        
-# Updated save_response() function
+
 def save_response(response_data):
     """Save response to CSV file with thread-safe file handling and backup"""
     try:
         # Load existing responses
         responses_df = load_responses()
         
-        # Make sure all columns exist in the DataFrame
-        required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
-        for col in required_columns:
-            if col not in responses_df.columns:
-                responses_df[col] = ''
-        
         # Add new response
         new_response = pd.DataFrame([response_data])
         
-        # Ensure columns are in the correct order
-        if not responses_df.empty:
-            # Get all columns from both DataFrames
-            all_columns = responses_df.columns.union(new_response.columns)
-            # Reindex both DataFrames with all columns
-            responses_df = responses_df.reindex(columns=all_columns)
-            new_response = new_response.reindex(columns=all_columns)
+        # Ensure all columns exist in both DataFrames
+        all_columns = responses_df.columns.union(new_response.columns)
+        responses_df = responses_df.reindex(columns=all_columns)
+        new_response = new_response.reindex(columns=all_columns)
         
-        # Concatenate new and existing responses
+        # Concatenate and save
         updated_responses = pd.concat([responses_df, new_response], ignore_index=True)
         
-        # Create a backup of the existing file if it exists
-        if os.path.exists(RESPONSES_FILE):
-            backup_filename = f"{RESPONSES_FILE}.backup"
-            with file_lock:
-                os.replace(RESPONSES_FILE, backup_filename)
-        
-        # Save updated responses with thread-safe file writing
         with file_lock:
+            # Create backup of existing file
+            if os.path.exists(RESPONSES_FILE):
+                backup_filename = f"{RESPONSES_FILE}.backup"
+                os.replace(RESPONSES_FILE, backup_filename)
+            
+            # Save new data
             updated_responses.to_csv(RESPONSES_FILE, index=False)
-        
+            
         return True
     except Exception as e:
         st.error(f"Error saving response: {e}")
         return False
 
-def check_password():
-    """Returns True if the user had the correct password."""
-
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == st.secrets["admin_password"]:
-            st.session_state["password_correct"] = True
-            st.session_state.password = ''  # Clear the password field
-        else:
-            st.session_state["password_correct"] = False
-
-    # Return True if the password is validated
-    if st.session_state.get("password_correct", False):
-        return True
-
-    # Show input for password
-    st.text_input(
-        "Password", 
-        type="password", 
-        on_change=password_entered, 
-        key="password"
-    )
-    if "password_correct" in st.session_state:
-        st.error("😕 Password incorrect")
-    return False
 
 def show_admin_page():
     """Shows the admin page with download functionality and advanced analytics"""
@@ -491,14 +503,25 @@ def show_skills_form(submitter_email, submitter_name):
             else:
                 st.error("There was an error saving your response. Please try again.")
 def main():
-    # Initialize total_points in session state if it doesn't exist
-    if 'total_points' not in st.session_state:
-        st.session_state.total_points = 0
-
-    # Sidebar for navigation and points tracking
+    # Initialize session states
+    if 'admin_view' not in st.session_state:
+        st.session_state.admin_view = False
+        
+    # Sidebar navigation
     with st.sidebar:
         st.title("Navigation")
         page = st.radio("Go to", ["Caravel Skills Matrix", "Admin"])
+        
+        if page == "Admin":
+            # Reset admin view if switching away from admin page
+            if not check_password():
+                st.session_state.admin_view = False
+                st.warning("Please enter the admin password to access this section.")
+                return
+            else:
+                st.session_state.admin_view = True
+        else:
+            st.session_state.admin_view = False
         
         # Always show points tracker in sidebar
         st.markdown("---")
