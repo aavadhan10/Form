@@ -672,9 +672,9 @@ def show_skills_form(submitter_email, submitter_name):
             st.stop()
         return
 
-    st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points**</u>", unsafe_allow_html=True)
+    st.markdown("<u>**You can type a number directly or use the up/down arrows to enter your points. Enter numbers slowly to allow the software time to register. **</u>", unsafe_allow_html=True)
     
-    if st.session_state.total_points >= MAX_TOTAL_POINTS:
+    if st.session_state.total_points >= MAX_TOTAL_POINTS: 
         st.warning("You have used all 90 points. To add points to other skills, first reduce points elsewhere.")
     
     st.markdown("---")
@@ -759,6 +759,8 @@ def main():
         st.markdown("🔵 Primary (8-10 points)")
         st.markdown("🟢 Secondary (3-7 points)")
         st.markdown("🟡 Limited (1-2 points)")
+        st.markdown("---")
+        st.markdown("Enter numbers slowly to allow the software time to register.")
     
     if page == "Admin":
         if not check_password():
