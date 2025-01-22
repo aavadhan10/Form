@@ -835,12 +835,12 @@ def main():
             st.session_state.total_points = 0
         if 'skills' not in st.session_state:
             st.session_state.skills = {
-                'Advertising and Labeling Regulations (Pharma/BioTech) (Skill 1)': 0,
-                'Advertising and Marketing Regulations (Retail and Consumer) (Skill 2)': 0,
-                'Advertising Technology (AdTech) (Skill 3)': 0,
-                'Affiliate Marketing Agreements (Skill 4)': 0,
-                'Amalgamations (Skill 5)': 0,
-                'Aquisitions (Skill 6)': 0,
+                'Acquisitions (Skill 1)': 0,
+                'Advertising and Labeling Regulations (Pharma/BioTech) (Skill 2)': 0,
+                'Advertising and Marketing Regulations (Retail and Consumer) (Skill 3)': 0,
+                'Advertising Technology (AdTech) (Skill 4)': 0,
+                'Affiliate Marketing Agreements (Skill 5)': 0,
+                'Amalgamations (Skill 6)': 0,
                 'Artificial Intelligence Terms, Regulations & Compliance (Skill 7)': 0,
                 'Associations (Skill 8)': 0,   
                 'Banking and Finance Transactions (Skill 9)': 0,
