@@ -592,7 +592,7 @@ def update_total_points():
                 continue
     st.session_state.total_points = round(total, 1)  # Round to 1 decimal place for consistency
     
-    # Show modal when hitting 90 points
+    # Show modal when hitting 120 points
     if total >= 90 and not st.session_state.get('modal_shown', False):
         st.session_state.show_modal = True
         st.session_state.modal_shown = True
@@ -630,7 +630,7 @@ def show_skills_form(submitter_email, submitter_name):
             background-color:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center;">
             <div style="background-color:white; padding:20px; border-radius:5px; width:400px; text-align:center;">
                 <h2 style="margin-bottom:20px;">Maximum Points Reached</h2>
-                <p style="margin-bottom:20px;">You have used all 90 points. To add points to other skills, 
+                <p style="margin-bottom:20px;">You have used all 120 points. To add points to other skills, 
                    you'll need to reallocate points from existing skills.</p>
                 <button onclick="closeModal()" style="padding:10px 20px; background-color:#0066cc; color:white; 
                     border:none; border-radius:5px; cursor:pointer;">OK, I'll Reallocate My Points</button>
@@ -676,7 +676,7 @@ def show_skills_form(submitter_email, submitter_name):
     st.markdown("<u>**Enter numbers slowly to allow the software time to register.**</u>", unsafe_allow_html=True)
 
     if st.session_state.total_points >= MAX_TOTAL_POINTS: 
-        st.warning("You have used all 90 points. To add points to other skills, first reduce points elsewhere.")
+        st.warning("You have used all 120 points. To add points to other skills, first reduce points elsewhere.")
     
     st.markdown("---")
     
@@ -702,13 +702,13 @@ def show_skills_form(submitter_email, submitter_name):
                     value=current_skill_points,
                     key=f"input_{skill}",
                     on_change=update_total_points,
-                    help="You've used all 90 points. To add points here, first reduce points in other skills." if st.session_state.total_points >= MAX_TOTAL_POINTS and current_skill_points == 0 else None
+                    help="You've used all 120 points. To add points here, first reduce points in other skills." if st.session_state.total_points >= MAX_TOTAL_POINTS and current_skill_points == 0 else None
                 )
                 st.session_state.skills[skill] = value
                 skill_inputs[skill] = value
             except:
                 if st.session_state.total_points >= MAX_TOTAL_POINTS:
-                    st.error("You've used all 90 points. To add points here, first reduce points in other skills.")
+                    st.error("You've used all 120 points. To add points here, first reduce points in other skills.")
         
         with col3:
             st.markdown(get_expertise_level(value))
@@ -786,7 +786,7 @@ def main():
     Please note, some skills listed may be industry specific or with a specialization. If not applicable, you can leave blank or put 0.
     
     ### Points Allocation Overview
-    You have **90 points** to allocate across **168 skills** listed in the matrix. These points represent your level of expertise 
+    You have **120 points** to allocate across **168 skills** listed in the matrix. These points represent your level of expertise 
     and experience in each area. The goal is to allocate your points in a way that best reflects your true areas of strength. 
     You'll need to make thoughtful choices about where your expertise lies, prioritizing key skills over areas of limited 
     experience to ensure we capture an honest reflection of your abilities.
@@ -803,7 +803,7 @@ def main():
     Carefully read through the skills listed in the matrix. Each skill represents a specific area of expertise relevant to our team's work.
     
     **2. Allocate Your Points**:
-    Distribute your 90 points across the skills based on your expertise. Remember, the objective is to highlight your primary 
+    Distribute your 120 points across the skills based on your expertise. Remember, the objective is to highlight your primary 
     strengths while providing an honest reflection of your experience in other areas. 
     
     **You can enter in a number between 1 and 10 or you could use the arrows to increase or decrease the number.**
@@ -813,10 +813,10 @@ def main():
     not fully represent your primary areas of expertise. Prioritize the skills where you are most confident and experienced.
     
     **4. Total Points**:
-    Ensure that the total number of points you allocate across all skills does not exceed **90 points**.
+    Ensure that the total number of points you allocate across all skills does not exceed **120 points**.
 
-    **5. Reaching 90 Points**:
-    The system will not allow you to enter more values after you've reached 90 points. Once 90 points have been reached, adjust other entry values accordingly, utilizing the point tracker on the left to keep track of updated points.
+    **5. Reaching 120 Points**:
+    The system will not allow you to enter more values after you've reached 120 points. Once 120 points have been reached, adjust other entry values accordingly, utilizing the point tracker on the left to keep track of updated points.
     
     ### Example Point Distribution
     - **Distribution and Supply Agreements:** 🔵 8 points (Primary area of expertise—highly experienced)
