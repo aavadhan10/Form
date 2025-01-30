@@ -593,10 +593,10 @@ def update_total_points():
     st.session_state.total_points = round(total, 1)  # Round to 1 decimal place for consistency
     
     # Show modal when hitting 120 points
-    if total >= 90 and not st.session_state.get('modal_shown', False):
+    if total >= 120 and not st.session_state.get('modal_shown', False):
         st.session_state.show_modal = True
         st.session_state.modal_shown = True
-    elif total < 90:
+    elif total < 120:
         st.session_state.modal_shown = False
 
 def get_expertise_level(value):
@@ -616,7 +616,7 @@ def is_email_unique(email):
 def show_skills_form(submitter_email, submitter_name):
     """Display the skills matrix form"""
     # Constants
-    MAX_TOTAL_POINTS = 90
+    MAX_TOTAL_POINTS = 120
     MAX_POINTS_PER_SKILL = 10
     
     # Initialize modal state
@@ -750,9 +750,9 @@ def main():
         # Always show points tracker in sidebar
         st.markdown("---")
         st.markdown("### Points Tracker")
-        progress = min(st.session_state.total_points / 90, 1.0)
+        progress = min(st.session_state.total_points / 120, 1.0)
         st.progress(progress)
-        st.metric("Total Points Used", st.session_state.total_points, f"/90 available")
+        st.metric("Total Points Used", st.session_state.total_points, f"/120 available")
         
         # Add color-coded expertise level legend
         st.markdown("---")
