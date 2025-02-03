@@ -8,21 +8,9 @@ import uuid
 import streamlit.components.v1 as components
 import threading
 file_lock = threading.Lock()
-import shutil
-from datetime import datetime
 
 # Constants
-MAIN_FILE = "skills_matrix_1:27_noon.csv"
-BACKUP_DIR = "backups"
-
-# Create backup directory if it doesn't exist
-if not os.path.exists(BACKUP_DIR):
-    os.makedirs(BACKUP_DIR)
-
-# Create immediate backup of existing data
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-backup_path = os.path.join(BACKUP_DIR, f"skills_matrix_backup_{timestamp}.csv")
-shutil.copy2(MAIN_FILE, backup_path)
+RESPONSES_FILE = "skills_matrix_responses.csv"
 
 def debug_csv_file():
     try:
@@ -36,39 +24,66 @@ def debug_csv_file():
 debug_csv_file()
 
 def load_responses():
-    """Load responses from the main file"""
+    """Load responses from CSV file with thread-safe file handling"""
     try:
-        if os.path.exists(MAIN_FILE):
-            return pd.read_csv(MAIN_FILE)
-        return pd.DataFrame()
+        with file_lock:
+            if os.path.exists(RESPONSES_FILE):
+                df = pd.read_csv(RESPONSES_FILE)
+                
+                # Ensure all required columns exist
+                required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
+                for col in required_columns:
+                    if col not in df.columns:
+                        df[col] = ''
+                
+                return df
+            
+            # If file doesn't exist, create empty DataFrame with required columns
+            return pd.DataFrame(columns=['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email'])
     except Exception as e:
         st.error(f"Error loading responses: {e}")
         return pd.DataFrame()
         
+# Updated save_response() function
 def save_response(response_data):
-    """Save response with protection for existing data"""
+    """Save response to CSV file with thread-safe file handling and backup"""
     try:
         # Load existing responses
-        responses_df = pd.read_csv(MAIN_FILE)
+        responses_df = load_responses()
         
-        # Create backup before modification
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_path = os.path.join(BACKUP_DIR, f"skills_matrix_backup_{timestamp}.csv")
-        responses_df.to_csv(backup_path, index=False)
+        # Make sure all columns exist in the DataFrame
+        required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
+        for col in required_columns:
+            if col not in responses_df.columns:
+                responses_df[col] = ''
         
         # Add new response
         new_response = pd.DataFrame([response_data])
+        
+        # Ensure columns are in the correct order
+        if not responses_df.empty:
+            # Get all columns from both DataFrames
+            all_columns = responses_df.columns.union(new_response.columns)
+            # Reindex both DataFrames with all columns
+            responses_df = responses_df.reindex(columns=all_columns)
+            new_response = new_response.reindex(columns=all_columns)
+        
+        # Concatenate new and existing responses
         updated_responses = pd.concat([responses_df, new_response], ignore_index=True)
         
-        # Save with thread-safe handling
+        # Create a backup of the existing file if it exists
+        if os.path.exists(RESPONSES_FILE):
+            backup_filename = f"{RESPONSES_FILE}.backup"
+            with file_lock:
+                os.replace(RESPONSES_FILE, backup_filename)
+        
+        # Save updated responses with thread-safe file writing
         with file_lock:
-            updated_responses.to_csv(MAIN_FILE, index=False)
+            updated_responses.to_csv(RESPONSES_FILE, index=False)
         
         return True
-        
     except Exception as e:
         st.error(f"Error saving response: {e}")
-        # If error occurs, we still have the backup
         return False
 
 def check_password():
