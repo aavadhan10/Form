@@ -10,18 +10,21 @@ import threading
 file_lock = threading.Lock()
 
 # Constants
-RESPONSES_FILE = "skills_matrix_responses.csv"
+RESPONSES_FILE = "skills_matrix_responses Caravel Jan 30 2025.csv"
 
 def debug_csv_file():
+    """Debug function to check CSV file status"""
     try:
-        with open(RESPONSES_FILE, 'r') as f:
-            print("First few lines of the CSV:")
-            for _ in range(5):
-                print(f.readline().strip())
+        if os.path.exists(RESPONSES_FILE):
+            print(f"File exists at {os.path.abspath(RESPONSES_FILE)}")
+            with open(RESPONSES_FILE, 'r') as f:
+                print("First few lines of the CSV:")
+                for _ in range(5):
+                    print(f.readline().strip())
+        else:
+            print(f"File does not exist at {os.path.abspath(RESPONSES_FILE)}")
     except Exception as e:
-        print(f"Error reading file: {e}")
-
-debug_csv_file()
+        print(f"Error during debug: {e}")
 
 def load_responses():
     """Load responses from CSV file with thread-safe file handling"""
@@ -29,17 +32,8 @@ def load_responses():
         with file_lock:
             if os.path.exists(RESPONSES_FILE):
                 df = pd.read_csv(RESPONSES_FILE)
-                
-                # Ensure all required columns exist
-                required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
-                for col in required_columns:
-                    if col not in df.columns:
-                        df[col] = ''
-                
                 return df
-            
-            # If file doesn't exist, create empty DataFrame with required columns
-            return pd.DataFrame(columns=['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email'])
+            return pd.DataFrame()  # Return empty DataFrame if file doesn't exist
     except Exception as e:
         st.error(f"Error loading responses: {e}")
         return pd.DataFrame()
@@ -51,33 +45,28 @@ def save_response(response_data):
         # Load existing responses
         responses_df = load_responses()
         
-        # Make sure all columns exist in the DataFrame
-        required_columns = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
-        for col in required_columns:
-            if col not in responses_df.columns:
-                responses_df[col] = ''
-        
-        # Add new response
+        # Create new response DataFrame
         new_response = pd.DataFrame([response_data])
         
-        # Ensure columns are in the correct order
-        if not responses_df.empty:
-            # Get all columns from both DataFrames
-            all_columns = responses_df.columns.union(new_response.columns)
-            # Reindex both DataFrames with all columns
-            responses_df = responses_df.reindex(columns=all_columns)
-            new_response = new_response.reindex(columns=all_columns)
+        # If responses_df is empty, use columns from new_response
+        if responses_df.empty:
+            responses_df = pd.DataFrame(columns=new_response.columns)
+        
+        # Ensure columns match
+        all_columns = responses_df.columns.union(new_response.columns)
+        responses_df = responses_df.reindex(columns=all_columns)
+        new_response = new_response.reindex(columns=all_columns)
         
         # Concatenate new and existing responses
         updated_responses = pd.concat([responses_df, new_response], ignore_index=True)
         
-        # Create a backup of the existing file if it exists
+        # Create backup of existing file
         if os.path.exists(RESPONSES_FILE):
             backup_filename = f"{RESPONSES_FILE}.backup"
             with file_lock:
                 os.replace(RESPONSES_FILE, backup_filename)
         
-        # Save updated responses with thread-safe file writing
+        # Save updated responses
         with file_lock:
             updated_responses.to_csv(RESPONSES_FILE, index=False)
         
@@ -85,7 +74,6 @@ def save_response(response_data):
     except Exception as e:
         st.error(f"Error saving response: {e}")
         return False
-
 def check_password():
     """Returns True if the user had the correct password."""
 
@@ -723,6 +711,14 @@ def show_skills_form(submitter_email, submitter_name):
                 st.error(f"Total points must be exactly {MAX_TOTAL_POINTS}. Current total: {st.session_state.total_points}")
                 return
                 
+            # Read existing responses
+            try:
+                existing_responses = pd.read_csv("skills_matrix_responses Caravel Jan 30 2025.csv")
+            except Exception as e:
+                st.error(f"Error reading existing responses: {e}")
+                return
+
+            # Prepare new response
             response_data = {
                 'Response ID': str(uuid.uuid4())[:8],
                 'Submitter Name': submitter_name,
@@ -731,12 +727,22 @@ def show_skills_form(submitter_email, submitter_name):
                 **st.session_state.skills
             }
             
-            if save_response(response_data):
-                # Set form_submitted to True instead of refreshing
+            # Create new response DataFrame
+            new_response = pd.DataFrame([response_data])
+            
+            # Combine existing and new responses
+            updated_responses = pd.concat([existing_responses, new_response], ignore_index=True)
+            
+            try:
+                # Save updated responses
+                updated_responses.to_csv("skills_matrix_responses Caravel Jan 30 2025.csv", index=False)
+                
+                # Set form_submitted to True and show success message
                 st.session_state.form_submitted = True
-                st.experimental_rerun()  # This will be the last refresh to show success message
-            else:
-                st.error("There was an error saving your response. Please try again.")
+                st.experimental_rerun()
+            except Exception as e:
+                st.error(f"Error saving response: {e}")
+                return
 def main():
     # Initialize total_points in session state if it doesn't exist
     if 'total_points' not in st.session_state:
