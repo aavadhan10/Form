@@ -48,13 +48,17 @@ def load_responses():
 def save_response(response_data):
     """Save response with protection for existing data"""
     try:
-        # Load existing responses
-        responses_df = pd.read_csv(MAIN_FILE)
+        # Use the exact filename from GitHub
+        filename = "skills_matrix_responses Caravel Jan 30 2025.csv"
         
-        # Create backup before modification
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_path = os.path.join(BACKUP_DIR, f"skills_matrix_backup_{timestamp}.csv")
-        responses_df.to_csv(backup_path, index=False)
+        # Load existing responses or create new DataFrame
+        try:
+            responses_df = pd.read_csv(filename)
+        except FileNotFoundError:
+            # If file doesn't exist, create new DataFrame with correct columns
+            metadata_cols = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
+            skill_cols = [col for col in response_data.keys() if col not in metadata_cols]
+            responses_df = pd.DataFrame(columns=metadata_cols + skill_cols)
         
         # Add new response
         new_response = pd.DataFrame([response_data])
@@ -62,13 +66,19 @@ def save_response(response_data):
         
         # Save with thread-safe handling
         with file_lock:
-            updated_responses.to_csv(MAIN_FILE, index=False)
-        
+            updated_responses.to_csv(filename, index=False)
+            
+            # Create dated snapshot with same naming convention
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            snapshot_filename = f"skills_matrix_responses Caravel {date_str}.csv"
+            updated_responses.to_csv(snapshot_filename, index=False)
+            
         return True
         
     except Exception as e:
-        st.error(f"Error saving response: {e}")
-        # If error occurs, we still have the backup
+        error_msg = f"Error saving response: {str(e)}"
+        print(error_msg)  # This will show in Streamlit's logs
+        st.error(error_msg)
         return False
 
 def check_password():
