@@ -432,26 +432,23 @@ def generate_skills_report(submitter_name, submitter_email):
     import streamlit as st
     
     # Load the responses
+     # Update the filename
+    filename = "skills_matrix_responses Caravel Jan 30 2025.csv"
+    
     try:
-        df = pd.read_csv("skills_matrix_responses Caravel Jan 30 2025.csv")
+        df = pd.read_csv(filename)
         
-        # Find the user's response
-        user_response = df[df['Submitter Email'] == submitter_email].iloc[-1]  # Get most recent if multiple
-        
-        # Get metadata columns
-        metadata_cols = ['Response ID', 'Timestamp', 'Submitter Email', 'Submitter Name']
-        skill_cols = [col for col in df.columns if col not in metadata_cols]
-        
-        # Calculate team averages (excluding the current user)
-        team_df = df[df['Submitter Email'] != submitter_email]
-        team_averages = team_df[skill_cols].mean()
-        
-        # Create user skills dictionary
-        user_skills = {
-            'Primary': [],
-            'Secondary': [],
-            'Limited': []
-        }
+        # Find the user's response - add error handling
+        user_responses = df[df['Submitter Email'] == submitter_email]
+        if user_responses.empty:
+            st.error("Could not find your submission in the database.")
+            return None
+            
+        # Get most recent response with safe indexing
+        user_response = user_responses.iloc[-1] if not user_responses.empty else None
+        if user_response is None:
+            st.error("Could not retrieve your submission details.")
+            return None
         
         # Categorize skills
         for skill in skill_cols:
