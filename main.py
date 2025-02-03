@@ -330,7 +330,7 @@ def create_pdf_report(submitter_name, submitter_email):
     styles = getSampleStyleSheet()
     
     # Load data
-    df = pd.read_csv("skills_matrix_responses Caravel Jan 30 2025.csv)
+    df = pd.read_csv("skills_matrix_responses Caravel Jan 30 2025.csv")
     user_response = df[df['Submitter Email'] == submitter_email].iloc[-1]
     
     # Title
