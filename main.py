@@ -12,15 +12,34 @@ import shutil
 from datetime import datetime
 
 # Constants
-CURRENT_FILE = "skills_matrix_responses Caravel Jan 30 2025.csv" 
+MAIN_FILE = "skills_matrix_1:27_noon.csv"
+BACKUP_DIR = "backups"
 
+# Create backup directory if it doesn't exist
+if not os.path.exists(BACKUP_DIR):
+    os.makedirs(BACKUP_DIR)
 
+# Create immediate backup of existing data
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+backup_path = os.path.join(BACKUP_DIR, f"skills_matrix_backup_{timestamp}.csv")
+shutil.copy2(MAIN_FILE, backup_path)
+
+def debug_csv_file():
+    try:
+        with open(RESPONSES_FILE, 'r') as f:
+            print("First few lines of the CSV:")
+            for _ in range(5):
+                print(f.readline().strip())
+    except Exception as e:
+        print(f"Error reading file: {e}")
+
+debug_csv_file()
 
 def load_responses():
     """Load responses from the main file"""
     try:
-        if os.path.exists(CURRENT_FILE):
-            return pd.read_csv(CURRENT_FILE)
+        if os.path.exists(MAIN_FILE):
+            return pd.read_csv(MAIN_FILE)
         return pd.DataFrame()
     except Exception as e:
         st.error(f"Error loading responses: {e}")
@@ -29,17 +48,13 @@ def load_responses():
 def save_response(response_data):
     """Save response with protection for existing data"""
     try:
-        # Use the exact filename from GitHub
-        filename = "skills_matrix_responses Caravel Jan 30 2025.csv"
+        # Load existing responses
+        responses_df = pd.read_csv(MAIN_FILE)
         
-        # Load existing responses or create new DataFrame
-        try:
-            responses_df = pd.read_csv(filename)
-        except FileNotFoundError:
-            # If file doesn't exist, create new DataFrame with correct columns
-            metadata_cols = ['Response ID', 'Timestamp', 'Submitter Name', 'Submitter Email']
-            skill_cols = [col for col in response_data.keys() if col not in metadata_cols]
-            responses_df = pd.DataFrame(columns=metadata_cols + skill_cols)
+        # Create backup before modification
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = os.path.join(BACKUP_DIR, f"skills_matrix_backup_{timestamp}.csv")
+        responses_df.to_csv(backup_path, index=False)
         
         # Add new response
         new_response = pd.DataFrame([response_data])
@@ -47,19 +62,13 @@ def save_response(response_data):
         
         # Save with thread-safe handling
         with file_lock:
-            updated_responses.to_csv(filename, index=False)
-            
-            # Create dated snapshot with same naming convention
-            date_str = datetime.now().strftime("%Y-%m-%d")
-            snapshot_filename = f"skills_matrix_responses Caravel {date_str}.csv"
-            updated_responses.to_csv(snapshot_filename, index=False)
-            
+            updated_responses.to_csv(MAIN_FILE, index=False)
+        
         return True
         
     except Exception as e:
-        error_msg = f"Error saving response: {str(e)}"
-        print(error_msg)  # This will show in Streamlit's logs
-        st.error(error_msg)
+        st.error(f"Error saving response: {e}")
+        # If error occurs, we still have the backup
         return False
 
 def check_password():
@@ -114,7 +123,7 @@ def show_admin_page():
                 st.download_button(
                     "📥 Download All Responses",
                     responses_df.to_csv(index=False),
-                    "skills_matrix_responses Caravel Jan 30 2025.csv",
+                    "skills_matrix_responses.csv",
                     "text/csv",
                     key='download-csv'
                 )
@@ -330,7 +339,7 @@ def create_pdf_report(submitter_name, submitter_email):
     styles = getSampleStyleSheet()
     
     # Load data
-    df = pd.read_csv("skills_matrix_responses Caravel Jan 30 2025.csv")
+    df = pd.read_csv("skills_matrix_responses.csv")
     user_response = df[df['Submitter Email'] == submitter_email].iloc[-1]
     
     # Title
@@ -432,23 +441,26 @@ def generate_skills_report(submitter_name, submitter_email):
     import streamlit as st
     
     # Load the responses
-     # Update the filename
-    filename = "skills_matrix_responses Caravel Jan 30 2025.csv"
-    
     try:
-        df = pd.read_csv(filename)
+        df = pd.read_csv("skills_matrix_responses.csv")
         
-        # Find the user's response - add error handling
-        user_responses = df[df['Submitter Email'] == submitter_email]
-        if user_responses.empty:
-            st.error("Could not find your submission in the database.")
-            return None
-            
-        # Get most recent response with safe indexing
-        user_response = user_responses.iloc[-1] if not user_responses.empty else None
-        if user_response is None:
-            st.error("Could not retrieve your submission details.")
-            return None
+        # Find the user's response
+        user_response = df[df['Submitter Email'] == submitter_email].iloc[-1]  # Get most recent if multiple
+        
+        # Get metadata columns
+        metadata_cols = ['Response ID', 'Timestamp', 'Submitter Email', 'Submitter Name']
+        skill_cols = [col for col in df.columns if col not in metadata_cols]
+        
+        # Calculate team averages (excluding the current user)
+        team_df = df[df['Submitter Email'] != submitter_email]
+        team_averages = team_df[skill_cols].mean()
+        
+        # Create user skills dictionary
+        user_skills = {
+            'Primary': [],
+            'Secondary': [],
+            'Limited': []
+        }
         
         # Categorize skills
         for skill in skill_cols:
@@ -985,4 +997,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
