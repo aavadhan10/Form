@@ -7,10 +7,6 @@ from datetime import datetime
 import uuid
 import streamlit.components.v1 as components
 import threading
-
-st.write("Current working directory:", os.getcwd())
-st.write("List of files in this directory:", os.listdir(os.getcwd()))
-
 file_lock = threading.Lock()
 
 # Constants
