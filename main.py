@@ -12,34 +12,15 @@ import shutil
 from datetime import datetime
 
 # Constants
-MAIN_FILE = "skills_matrix_1:27_noon.csv"
-BACKUP_DIR = "backups"
+CURRENT_FILE = "skills_matrix_responses Caravel Jan 30 2025.csv" 
 
-# Create backup directory if it doesn't exist
-if not os.path.exists(BACKUP_DIR):
-    os.makedirs(BACKUP_DIR)
 
-# Create immediate backup of existing data
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-backup_path = os.path.join(BACKUP_DIR, f"skills_matrix_backup_{timestamp}.csv")
-shutil.copy2(MAIN_FILE, backup_path)
-
-def debug_csv_file():
-    try:
-        with open(RESPONSES_FILE, 'r') as f:
-            print("First few lines of the CSV:")
-            for _ in range(5):
-                print(f.readline().strip())
-    except Exception as e:
-        print(f"Error reading file: {e}")
-
-debug_csv_file()
 
 def load_responses():
     """Load responses from the main file"""
     try:
-        if os.path.exists(MAIN_FILE):
-            return pd.read_csv(MAIN_FILE)
+        if os.path.exists(CURRENT_FILE):
+            return pd.read_csv(CURRENT_FILE)
         return pd.DataFrame()
     except Exception as e:
         st.error(f"Error loading responses: {e}")
