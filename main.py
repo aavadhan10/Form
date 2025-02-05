@@ -10,7 +10,7 @@ import threading
 file_lock = threading.Lock()
 
 # Constants
-RESPONSES_FILE = "skills_matrix_responses Caravel Jan 30 2025.csv"
+RESPONSES_FILE = "skills_matrix_responses_Caravel_Jan_30_2025.csv"
 
 def debug_csv_file():
     """Debug function to check CSV file status"""
