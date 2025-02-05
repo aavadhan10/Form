@@ -41,18 +41,9 @@ def load_responses():
 # Updated save_response() function
 def save_response(response_data):
     """Save response to CSV file with thread-safe file handling and backup"""
-    FILE_NAME = "skills_matrix_responses Caravel Jan 30 2025.csv"
-    
     try:
         # Load existing responses
-        with file_lock:
-            try:
-                if os.path.exists(FILE_NAME):
-                    responses_df = pd.read_csv(FILE_NAME)
-                else:
-                    responses_df = pd.DataFrame()
-            except pd.errors.EmptyDataError:
-                responses_df = pd.DataFrame()
+        responses_df = load_responses()
         
         # Create new response DataFrame
         new_response = pd.DataFrame([response_data])
@@ -70,18 +61,18 @@ def save_response(response_data):
         updated_responses = pd.concat([responses_df, new_response], ignore_index=True)
         
         # Create backup of existing file
-        if os.path.exists(FILE_NAME):
-            backup_filename = f"{FILE_NAME}.backup"
+        if os.path.exists(RESPONSES_FILE):
+            backup_filename = f"{RESPONSES_FILE}.backup"
             with file_lock:
-                os.replace(FILE_NAME, backup_filename)
+                os.replace(RESPONSES_FILE, backup_filename)
         
         # Save updated responses
         with file_lock:
-            updated_responses.to_csv(FILE_NAME, index=False)
+            updated_responses.to_csv(RESPONSES_FILE, index=False)
         
         return True
     except Exception as e:
-        st.error(f"Error saving response: {str(e)}")
+        st.error(f"Error saving response: {e}")
         return False
 def check_password():
     """Returns True if the user had the correct password."""
